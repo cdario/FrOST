@@ -86,7 +86,7 @@ JavaVM* Environment::startJVM()
 		return NULL;
 
 	// out jvm pointer in the attribute
-	if (env->GetJavaVM(&Environment::jvm) != JNI_OK)
+	if (env->GetJavaVM(& Environment::jvm) != JNI_OK)
 		return NULL;
 
 	//throw gcnew System::Exception(); // beyond the scope of this answer
