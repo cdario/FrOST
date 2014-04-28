@@ -112,6 +112,50 @@ namespace REAP1{
 		return ( newQ );		//TODO: verify passing by value
 	}
 
+	int ReAP1Policy::printQs(){
+	
+		//std::string fname = "Qvalues.txt";
+
+
+		////int WriteFile(std::string fname, std::map<std::string, std::string> *m) {
+		//	int count = 0;
+		//	if (Q.empty())
+		//		return 0;
+ 
+		//	FILE *fp = fopen(fname.c_str(), "w");
+		//	if (!fp)
+		//		return -errno;
+  //   
+
+		//	typedef std::map<REAP1STATE, REAP1QVALUES>::iterator reapIT;
+
+		//	for (int i=0; i < Q.size(); i++)
+		//	{
+		//		Q
+		//	
+		//	}
+
+
+		//	for(reapIT it = Q.begin(); it != Q.end(); it++) {
+		//		// iterator->first = key
+		//		// iterator->second = value
+		//		// Repeat if you also want to iterate through the second map.
+		//	}
+
+		//	for(std::map<REAP1STATE, REAP1QVALUES>::iterator it = Q.begin(); it != Q.end(); it++) {
+		//		
+		//		it
+		//		fprintf(fp, "%s=%s\n", it->first.c_str(), it->second.c_str());
+		//		count++;
+		//	}
+  //   
+		//	fclose(fp);
+		//	return count;
+		//}
+	
+		return 0;
+	}
+
 	void ReAP1Policy::setQvalue(REAP1STATE state, int action, double newQ){
 
 		switch (action)

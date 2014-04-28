@@ -52,6 +52,7 @@ namespace REAP1 {
 
 		ReAP1Policy::REAP1STATE tState;
 		void ReAP1Policy::updateState(REAP1STATE nState);
+		int ReAP1Policy::printQs();
 
 		int nStates;		/*	(15000) queue length (capped) * phase * remaining (max green)  = 100(3-ph) * 3 * 50	*/
 		int nActions;		/*	(3) 0: extend current; 1: apply next phase; 2: skip next and apply 2nd next	*/

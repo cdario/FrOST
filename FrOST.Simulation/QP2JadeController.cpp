@@ -24,6 +24,10 @@
 #include <process.h>
 #include <random>
 
+#include <Environment.h>
+
+
+
 extern "C" {
 #include "programmer.h"
 }
@@ -170,6 +174,19 @@ REAP1::ReAP1Policy::REAP1STATE xState;
 bool actionTaken = false;
 int action = -1;
 
+
+const std::string currentDateTime() {
+    time_t     now = time(0);
+    struct tm  tstruct;
+    char       buf[80];
+    tstruct = *localtime(&now);
+    // Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
+    // for more information about date/time format
+    strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+
+    return buf;
+}
+
 /* -----------------------------------------------------------------------
 * Runs algorithm on a separate thread and updates control sequence
 * --------------------------------------------------------------------- */
@@ -308,9 +325,10 @@ void loadPhasingFile(void)
 				iMov++;
 		}
 		myfile.close();
+		qps_GUI_printf(">>> Loaded phasing specs from file"); 
 	}
 
-	else qps_GUI_printf("Unable to open file"); 
+	else qps_GUI_printf(">>> Unable to open phasing file"); 
 
 }
 
@@ -322,13 +340,13 @@ void qpx_NET_postOpen(void)
 {
 	jNode = qpg_NET_node(junctionNode);
 	qps_NDE_externalController(jNode,PTRUE);
-
 	phasing.resize(PHASE_COUNT);
+
 	for (int p=0; p < PHASE_COUNT; p++)
 	{
 		phasing[p].resize(MOVEMENT_COUNT);
 	}
-
+	
 	loadPhasingFile();
 
 	// clockwise
@@ -339,6 +357,7 @@ void qpx_NET_postOpen(void)
 
 		for (int p=0; p < PHASE_COUNT; p++)
 		{
+			// TODO: this step might be slowing down onload();
 			arrivalsHorizon[h][p]= 0; //Init all to zero
 		}
 	}
@@ -377,7 +396,7 @@ void qpx_NET_postOpen(void)
 			appr 0	0	1	1	2	2	3	3
 		*/
 	}
-
+	
 	/********		 Agent instance(s)		******/
 
 	REAP1::ReAP1 rp =  REAP1::ReAP1();
@@ -411,6 +430,35 @@ void qpx_NET_postOpen(void)
 	currentPhaseIndex = inState.phaseIndex;		//NEW
 	timeToRed = (float)inState.greenRemaining;
 	srand((int)time(NULL));
+
+	// initialise communication with JADE here and intersection agents
+	//qps_GUI_printf("Network replicated to JADE Platform Container...");
+
+	//1.	start jade platform, i.e., container and junction agents
+
+	Environment env = Environment();
+	
+	JavaVM* jvm_r = env.startJVM();
+
+	
+	int stat = -10;
+	if(jvm_r != NULL)
+		stat = env.startPlatform();
+
+	if (stat == 0)
+		qps_GUI_printf(">>> JADE Platform main-cointaner started!");
+	else
+		qps_GUI_printf(">>> Error starting JADE platform main-container %i", stat);
+	
+	//1.1	create identical junction agents in JADE
+
+	// loop over structure of nodes!
+	//env.addJunction(junctionNode);
+
+	
+	//jvm_r->DetachCurrentThread();
+	//jvm_r->DestroyJavaVM();
+
 
 }
 
@@ -701,7 +749,6 @@ void printVectorToFile()
 	myfile.close();
 }
 
-
 /* ---------------------------------------------------------------------
 * sets a phase in the controller
 * --------------------------------------------------------------------- */
@@ -787,7 +834,6 @@ void manageThread()
 		}
 	}
 }
-
 
 const std::vector<CONTROLDATA> getTempSeq(){
 	return tempSeq;
@@ -917,3 +963,4 @@ void qpx_GUI_keyPress(int key, int ctrl, int shift, int left, int middle, int ri
 		qps_GUI_printf("********* PRINTED ************");
 	}
 }
+
