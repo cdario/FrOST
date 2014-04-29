@@ -433,7 +433,6 @@ void qpx_NET_postOpen(void)
 	srand((int)time(NULL));
 
 	// initialise communication with JADE here and intersection agents
-	//qps_GUI_printf("Network replicated to JADE Platform Container...");
 
 	//1.	start jade platform, i.e., container and junction agents
 
@@ -450,7 +449,7 @@ void qpx_NET_postOpen(void)
 	if (stat == 0)
 		qps_GUI_printf(">>> JADE Platform main-cointaner started!");
 	else
-		qps_GUI_printf(">>> Error starting JADE platform main-container %i, f=%i", stat, env.flag);
+		qps_GUI_printf(">>> Error starting JADE platform main-container %i", stat);
 	
 
 	//1.1	create identical junction agents in JADE
