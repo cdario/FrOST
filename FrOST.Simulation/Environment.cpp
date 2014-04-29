@@ -12,22 +12,26 @@ class Environment {
 
 public:
 	TCHAR* dllpath;
-	JavaVM* Environment::jvm;	// throwing exception if using this
+	//JavaVM* Environment::jvm;	// throwing exception if using this
 	JavaVM* startJVM();
-	int startPlatform();
+	int startPlatform(JavaVM*);
 	Environment();
+
+	int flag;
 };
 
 
 Environment::Environment()
 {
 	dllpath = NULL;
-	jvm = NULL;
+	flag = 0;
+	//jvm = NULL;
 	//mustDetach = false;
 }
 
 JavaVM* Environment::startJVM()
 {
+	flag = 1;
 	/***	Finding the jvm.dll	***/
 	DWORD retval;
 	HKEY jKey;	// fetch jvm.dll path from registry
@@ -63,6 +67,7 @@ JavaVM* Environment::startJVM()
 	if (jniModule == NULL)
 		throw;
 		//throw gcnew System::ComponentModel::Win32Exception();
+
 	typedef int (JNICALL * JNI_CreateJavaVM)(JavaVM** jvm, JNIEnv** env, JavaVMInitArgs* initargs);
 	JNI_CreateJavaVM createJavaVM = (JNI_CreateJavaVM)GetProcAddress(jniModule, "JNI_CreateJavaVM");
 
@@ -80,14 +85,60 @@ JavaVM* Environment::startJVM()
 	initArgs.options = options;
     initArgs.ignoreUnrecognized = false;
 
-	JavaVM* jvm_i;
+	flag = 2;
+	JavaVM* jvm;
 	JNIEnv* env;
-	if ((retval = createJavaVM(&jvm_i, &env, &initArgs)) != JNI_OK)
+	flag = 3;
+
+	//NEW
+	typedef jint (JNICALL * GetCreatedJavaVMs)(JavaVM**, jsize, jsize*);
+	GetCreatedJavaVMs JNI_GetCreatedJavaVMs;
+
+	JNI_GetCreatedJavaVMs = (GetCreatedJavaVMs)GetProcAddress(jniModule, "JNI_GetCreatedJavaVMs");
+
+	int n;
+	retval = JNI_GetCreatedJavaVMs(&jvm,1, (jsize*) &n);
+	flag = 31;
+	
+	if (retval == JNI_OK)
+	{
+		if (n == 0)
+		{
+			//create new
+			retval = createJavaVM(&jvm, &env, &initArgs);
+		}else
+		{
+			if (n != 1)
+			{
+				flag = 32;
+				return NULL;
+			}
+		}
+	}
+
+	//here n == 1 
+	//flag = retval;
+	return jvm;
+	
+	
+	//if (retval == JNI_EEXIST)
+	//{
+	//	
+	//	int n; 
+	//	jint res = JNI_GetCreatedJavaVMs(&jvm, 1, (jsize*) &n);
+	//	flag = 32;
+	//}
+	
+
+	/*if (retval != JNI_OK)
+	{
+		flag = retval;
 		return NULL;
+	}*/
 
 	// out jvm pointer in the attribute
-	if (env->GetJavaVM(& Environment::jvm) != JNI_OK)
-		return NULL;
+	//if (env->GetJavaVM(&jvm) != JNI_OK)
+	//	return NULL;
 
 	//throw gcnew System::Exception(); // beyond the scope of this answer
 
@@ -101,10 +152,10 @@ JavaVM* Environment::startJVM()
 
 	//make jvm a global?
 
-	return jvm;
+	//return jvm;
 }
 
-int Environment::startPlatform(){
+int Environment::startPlatform(JavaVM* jvm){
 	
 	//JNIEnv * env;
  //   // double check it's all ok
@@ -140,33 +191,36 @@ int Environment::startPlatform(){
 	/*
 		get the JVM from ... globals
 	*/
+	//JavaVM* jvm;
+
+	flag = 4;
 	JNIEnv* env;
-
-
 	bool mustDetach = false;
 	// discover env thread using the JVM
 	
-	jint retval = Environment::jvm->GetEnv((void**)&env, JNI_VERSION_1_6);
+	jint retval = jvm->GetEnv((void**)&env, JNI_VERSION_1_6);
 	//return retval;
-
+	flag = 5;
 	if (retval == JNI_EDETACHED)
 	{
 		JavaVMAttachArgs args;
 		args.version = JNI_VERSION_1_6;
 		args.name = NULL;
 		args.group = NULL;
-		retval = Environment::jvm->AttachCurrentThread((void **)&env, &args);
+		retval = jvm->AttachCurrentThread((void **)&env, &args);
 		mustDetach = true; // to clean up afterwards
+		flag = 6;
 	}
 	if (retval != JNI_OK)
 		throw retval;
 	
-	
+	flag = 7;
 	//invokeJavaCode(env); // next step
 	
 	//if (true)
 	if (retval == JNI_OK)
 	{
+		flag = 8;
 		//TCHAR* dllpath = environment.dllpath;
 	
 		/**	Invoking Java code: needs env*/
@@ -198,11 +252,14 @@ int Environment::startPlatform(){
 	//TODO: determine method signature... javap -s
 	// type can be any primitive, matching arguments in the java method
 	//http://stackoverflow.com/questions/17305524/simplicity-for-executing-java-from-c
-
+	flag = 9;
 
 	/*FROM OPTIONAL*/
 	if (mustDetach)
-		Environment::jvm->DetachCurrentThread();
+	{
+		jvm->DetachCurrentThread();
+		flag = 10;
+	}
 	/* FROM OPTIONAL */
 
 

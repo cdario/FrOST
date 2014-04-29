@@ -55,7 +55,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;WIN32;_WINDOWS;_USRDLL;PLUGIN_EXPORTS;__i386__;MODELLER_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Program Files\Java\jdk1.8.0\include\win32;C:\Program Files\Java\jdk1.8.0\include;..\Debug\;..\FrOST.Algorithms\;.;..\..\include;..\..\include\user;..\FrOST.Algorithms\Debug\;'C:\Users\cesar\Dropbox\Paramics CODE\FrOST\Debug';'C:\Users\cesar\Dropbox\Paramics CODE\FrOST\FrOST.Algorithms\Debug';%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files\Java\jdk1.8.0\include\win32;C:\Program Files\Java\jdk1.8.0\lib;C:\Program Files\Java\jdk1.8.0\include;..\Debug\;..\FrOST.Algorithms\;.;..\..\include;..\..\include\user;..\FrOST.Algorithms\Debug\;'C:\Users\cesar\Dropbox\Paramics CODE\FrOST\Debug';'C:\Users\cesar\Dropbox\Paramics CODE\FrOST\FrOST.Algorithms\Debug';%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderOutputFile>.\Debug/modeller/obj/modeller.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\Debug/modeller/obj/</AssemblerListingLocation>
       <ObjectFileName>.\Debug/modeller/obj/</ObjectFileName>
@@ -67,9 +67,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>Debug/FrOSTSim.dll</OutputFile>
       <AdditionalDependencies>simcore.lib;modeller.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\Debug\;..\..\lib;../../bin/win32/opt;..\FrOST.Algorithms\;.\FrOST.Algorithms\;..\FrOST.Algorithms\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\Debug\;..\..\lib;../../bin/win32/opt;..\FrOST.Algorithms\;.\FrOST.Algorithms\;..\FrOST.Algorithms\Debug\;C:\Program Files\Java\jdk1.8.0\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>.\Debug/modeller/bin/FrOSTSim.pdb</ProgramDatabaseFile>
       <ImportLibrary>.\Debug/modeller/bin/FrOSTSim.lib</ImportLibrary>
+      <AddModuleNamesToAssembly>%(AddModuleNamesToAssembly)</AddModuleNamesToAssembly>
     </Link>
     <Bscmake>
       <OutputFile>.\Debug/modeller/bin/modeller.bsc</OutputFile>

@@ -174,6 +174,7 @@ REAP1::ReAP1Policy::REAP1STATE xState;
 bool actionTaken = false;
 int action = -1;
 
+JavaVM* jvm_r;
 
 const std::string currentDateTime() {
     time_t     now = time(0);
@@ -438,23 +439,26 @@ void qpx_NET_postOpen(void)
 
 	Environment env = Environment();
 	
-	JavaVM* jvm_r = env.startJVM();
+	//JavaVM* 
+		jvm_r = env.startJVM();
 
 	
 	int stat = -10;
 	if(jvm_r != NULL)
-		stat = env.startPlatform();
+		stat = env.startPlatform(jvm_r);
 
 	if (stat == 0)
 		qps_GUI_printf(">>> JADE Platform main-cointaner started!");
 	else
-		qps_GUI_printf(">>> Error starting JADE platform main-container %i", stat);
+		qps_GUI_printf(">>> Error starting JADE platform main-container %i, f=%i", stat, env.flag);
 	
+
 	//1.1	create identical junction agents in JADE
 
 	// loop over structure of nodes!
 	//env.addJunction(junctionNode);
 
+	
 	
 	//jvm_r->DetachCurrentThread();
 	//jvm_r->DestroyJavaVM();
@@ -462,6 +466,16 @@ void qpx_NET_postOpen(void)
 
 }
 
+void printMe(char* message)
+{
+	qps_GUI_printf(message);
+}
+
+//void qpx_NET_close()
+//{
+//	jvm_r->DetachCurrentThread();
+//	jvm_r->DestroyJavaVM();
+//}
 
 /* ---------------------------------------------------------------------
 * Include GUI elements

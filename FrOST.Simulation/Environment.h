@@ -8,6 +8,8 @@ public:
 	static JavaVM* Environment::jvm;	// throwing exception if using this
 	
 	JavaVM* startJVM();
-	int startPlatform();
+	int startPlatform(JavaVM* jvm);
+
+	int flag;
 
 };
