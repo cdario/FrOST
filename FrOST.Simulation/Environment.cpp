@@ -10,12 +10,20 @@ public:
 	JavaVM* startJVM();
 	int startPlatform(JavaVM*);
 	Environment();
+	int initJunction(int id);
+	void close();
+	HMODULE jniModule;
 };
 
 
 Environment::Environment()
 {
 	dllpath = NULL;
+}
+
+int initJunction(int id)
+{
+	return id;
 }
 
 JavaVM* Environment::startJVM()
@@ -49,7 +57,7 @@ JavaVM* Environment::startJVM()
 
 	/***	Loading the jvm.dll and functions GetCreatedJavaVMs & CreateJavaVM ***/
 
-	HMODULE jniModule = LoadLibraryA(dllpath);
+	jniModule = LoadLibraryA(dllpath);
 
 	delete[] dllpath;
 	if (jniModule == NULL)
@@ -145,6 +153,10 @@ int Environment::startPlatform(JavaVM* jvm){
 		}
 
 		if (returnedValue) return JNI_OK;
-		return JNI_ERR;
 	}
+	return JNI_ERR;
+}
+
+void Environment::close(){
+	FreeLibrary(jniModule);
 }

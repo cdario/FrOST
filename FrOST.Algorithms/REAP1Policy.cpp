@@ -35,7 +35,6 @@ namespace REAP1{
 		tState = getStateInstance(queueSt, 0, 0);	// TODO: improve initial state
 		nStates = Q.size();
 		nActions = 3;
-	
 	}
 
 /* ---------------------------------------------------------------------
@@ -49,7 +48,6 @@ namespace REAP1{
 		state.phaseIndex = iPhase;
 		state.greenRemaining = rGreen;
 		return state;
-		
 	}
 	
 	ReAP1Policy::REAP1STATE ReAP1Policy::setState(ReAP1Policy::REAP1STATE state)
@@ -57,7 +55,7 @@ namespace REAP1{
 		tState = state;
 		return tState;
 	}
-	
+	// TODO: make this function faster, slows down DLL load
 	void ReAP1Policy::initQValues(double iValue){
 		
 
@@ -100,7 +98,6 @@ namespace REAP1{
 		//tState = getNextState(getStateInstance(queueSt, 0, 0));
 	}
 
-	
 	std::vector< double> ReAP1Policy::getQvalues(REAP1STATE state){
 		std::vector< double> newQ;
 		newQ.push_back(Q[state].qValue3);

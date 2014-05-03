@@ -26,6 +26,12 @@
 
 #include <Environment.h>
 
+#ifdef WIN32
+#include <Windows.h>
+#else
+#include <sys/time.h>
+#include <ctime>
+#endif
 
 
 extern "C" {
@@ -136,6 +142,7 @@ std::vector<std::vector<int> > arrivalsHorizon;
 double leftTurnProportion = 0.1; /* simplified turning proportions, must agree OD Matrix */ //nbefore 0.2
 double rightTurnProportion = 0.1;
 const char * phasing_file = "c:\\temp\\phasing.txt";
+const char * log_file = "c:\\temp\\cop_log.txt";
 //const char * phasing_file = "phasing.txt";
 
 int eQueueCount[3] = {0,0,0};	// in vehicles per phase
@@ -175,6 +182,48 @@ bool actionTaken = false;
 int action = -1;
 
 JavaVM* jvm_r;
+
+/* Returns the amount of milliseconds elapsed since the UNIX epoch. Works on both
+* windows and linux. */
+
+typedef long long int64; 
+typedef unsigned long long uint64;
+
+int64 GetTimeMs64()
+{
+	#ifdef WIN32
+		/* Windows */
+		FILETIME ft;
+		LARGE_INTEGER li;
+
+		/* Get the amount of 100 nano seconds intervals elapsed since January 1, 1601 (UTC) and copy it
+		* to a LARGE_INTEGER structure. */
+		GetSystemTimeAsFileTime(&ft);
+		li.LowPart = ft.dwLowDateTime;
+		li.HighPart = ft.dwHighDateTime;
+
+		uint64 ret = li.QuadPart;
+		ret -= 116444736000000000LL; /* Convert from file time to UNIX epoch time. */
+		ret /= 10000; /* From 100 nano seconds (10^-7) to 1 millisecond (10^-3) intervals */
+
+		return ret;
+	#else
+		/* Linux */
+		struct timeval tv;
+
+		gettimeofday(&tv, NULL);
+
+		uint64 ret = tv.tv_usec;
+		/* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
+		ret /= 1000;
+
+		/* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
+		ret += (tv.tv_sec * 1000);
+
+		return ret;
+	#endif
+}
+
 
 const std::string currentDateTime() {
     time_t     now = time(0);
@@ -339,6 +388,10 @@ void loadPhasingFile(void)
 
 void qpx_NET_postOpen(void)
 {
+	std::vector<int64> stamps;
+	//int64 tempI = 0;
+	
+
 	jNode = qpg_NET_node(junctionNode);
 	qps_NDE_externalController(jNode,PTRUE);
 	phasing.resize(PHASE_COUNT);
@@ -347,8 +400,10 @@ void qpx_NET_postOpen(void)
 	{
 		phasing[p].resize(MOVEMENT_COUNT);
 	}
-	
+	//tempI = GetTimeMs64();stamps.push_back(tempI);
+
 	loadPhasingFile();
+	//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
 
 	// clockwise
 	arrivalsHorizon.resize(HORIZON_SIZE);
@@ -362,7 +417,7 @@ void qpx_NET_postOpen(void)
 			arrivalsHorizon[h][p]= 0; //Init all to zero
 		}
 	}
-
+	//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
 	upstrDetectors[0] = qpg_NET_detector("NS_UPSTREAM_DETECTOR");
 	upstrDetectors[1] = qpg_NET_detector("EW_UPSTREAM_DETECTOR");
 	upstrDetectors[2] = qpg_NET_detector("SN_UPSTREAM_DETECTOR");
@@ -397,12 +452,12 @@ void qpx_NET_postOpen(void)
 			appr 0	0	1	1	2	2	3	3
 		*/
 	}
-	
+	//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
 	/********		 Agent instance(s)		******/
 
 	REAP1::ReAP1 rp =  REAP1::ReAP1();
 	instances.push_back(rp);  /*	includes policy instance */
-
+	//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
 	instances[0].setMaxPhCompute(MAX_SEQUENCE);
 	instances[0].setOutput(false);
 	//instances[0].setInitialPhase(2);
@@ -419,6 +474,8 @@ void qpx_NET_postOpen(void)
 	instances[0].setLanePhases(1, 1);
 	instances[0].setLanePhases(2, 2);
 
+	//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
+	
 	REAP1::ReAP1Policy::REAP1STATE inState;
 	inState.greenRemaining = MAX_GREEN;
 	inState.phaseIndex = 2;
@@ -436,6 +493,8 @@ void qpx_NET_postOpen(void)
 
 	//1.	start jade platform, i.e., container and junction agents
 
+	//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
+
 	Environment env = Environment();
 	
 	//JavaVM* 
@@ -449,15 +508,20 @@ void qpx_NET_postOpen(void)
 	if (stat == 0)
 		qps_GUI_printf(">>> JADE Platform main-cointaner started!");
 	else
-		qps_GUI_printf(">>> Error starting JADE platform main-container %i", stat);
+		qps_GUI_printf(">>> Error starting JADE platform main-container error code=%i", stat);
 	
 
 	//1.1	create identical junction agents in JADE
 
 	// loop over structure of nodes!
 	//env.addJunction(junctionNode);
+	//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
 
-	
+	/*
+	for(std::vector<int64>::iterator it = stamps.begin(); it != stamps.end(); ++it) {
+		qps_GUI_printf("%lu", *it);
+	}
+	*/
 	
 	//jvm_r->DetachCurrentThread();
 	//jvm_r->DestroyJavaVM();
@@ -470,11 +534,14 @@ void printMe(char* message)
 	qps_GUI_printf(message);
 }
 
-//void qpx_NET_close()
-//{
-//	jvm_r->DetachCurrentThread();
-//	jvm_r->DestroyJavaVM();
-//}
+void qpx_NET_close()
+{
+	/*Environment env = Environment();
+	jvm_r = env.startJVM();
+	jvm_r->DetachCurrentThread();
+	jvm_r->DestroyJavaVM();
+	env.close();*/
+}
 
 /* ---------------------------------------------------------------------
 * Include GUI elements
@@ -976,4 +1043,5 @@ void qpx_GUI_keyPress(int key, int ctrl, int shift, int left, int middle, int ri
 		qps_GUI_printf("********* PRINTED ************");
 	}
 }
+
 

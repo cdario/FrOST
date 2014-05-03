@@ -9,7 +9,8 @@ public:
 	
 	JavaVM* startJVM();
 	int startPlatform(JavaVM* jvm);
-
-	int flag;
+	int initJunction(int id);
+	HMODULE jniModule;
+	void close();
 
 };
