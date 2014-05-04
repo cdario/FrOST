@@ -2,26 +2,39 @@
 #include <jni.h>       /* where everything is defined */
 #include <stdio.h>
 #include <iostream>
+#include "Environment.h"
 
-class Environment {
+//class Environment {
+//
+//public:
+//	TCHAR* dllpath;
+//	static jclass platformClass;
+//
+//	JavaVM* startJVM();
+//	int startPlatform(JavaVM*);
+//	int initJunction(int id);
+//	HMODULE jniModule;
+//	void close();
+//
+//	Environment();
+//
+//};
 
-public:
-	TCHAR* dllpath;
-	JavaVM* startJVM();
-	int startPlatform(JavaVM*);
-	Environment();
-	int initJunction(int id);
-	void close();
-	HMODULE jniModule;
-};
+//Cache Class, Method, Field IDs
 
+jclass Environment::platformClass = NULL;
+jmethodID Environment::startJadeMethodID = NULL;
+jmethodID Environment::addJunctionMethodID = NULL;
+jmethodID Environment::updJunctionMethodID = NULL;
 
 Environment::Environment()
 {
 	dllpath = NULL;
+	platformClass = NULL;
+
 }
 
-int initJunction(int id)
+int Environment::initJunction(int id)
 {
 	return id;
 }
@@ -87,7 +100,7 @@ JavaVM* Environment::startJVM()
 	GetCreatedJavaVMs JNI_GetCreatedJavaVMs;
 
 	JNI_GetCreatedJavaVMs = (GetCreatedJavaVMs)GetProcAddress(jniModule, "JNI_GetCreatedJavaVMs");
-
+	
 	int n;
 	retval = JNI_GetCreatedJavaVMs(&jvm,1, (jsize*) &n);
 
@@ -127,29 +140,39 @@ int Environment::startPlatform(JavaVM* jvm){
 
 	if (retval == JNI_OK)
 	{
-
 		static const char* const jvmClassName = "com/cdario/hlea4tc/integration/PlatformMediator";
-
 		jclass clazz =  env->FindClass(jvmClassName);
+		platformClass = (jclass)env->NewGlobalRef(clazz);
+
 		if (env->ExceptionCheck())
 		{
 			env->ExceptionOccurred();
-			return JNI_ERR;
+			return JNI_ABORT;
 		}
-		if (clazz == NULL){
-			return JNI_ERR;
-		}
-
-		jmethodID mid = env->GetStaticMethodID(clazz, "startJadePlatform", "()Z");	//determine signature via javap -s
-		if (mid == NULL){
-			return JNI_ERR;
+		if (platformClass == NULL){
+			return JNI_ABORT;
 		}
 
-		BOOL returnedValue = env->CallStaticBooleanMethod(clazz, mid);
+		//jmethodID mid = env->GetStaticMethodID(platformClass, "startJadePlatform", "()Z");	//determine signature via javap -s
+		startJadeMethodID = env->GetStaticMethodID(platformClass, "startJadePlatform", "()Z");//determine signature via javap -s
+		addJunctionMethodID = env->GetStaticMethodID(platformClass, "initJunctionAgent", "(Ljava/lang/String;)Z");//determine signature via javap -s
+		updJunctionMethodID = env->GetStaticMethodID(platformClass, "updJunctionAgent", "(Ljava/lang/String;I)Z");//determine signature via javap -s
+
+		if (startJadeMethodID == NULL 
+			|| addJunctionMethodID == NULL
+			|| updJunctionMethodID == NULL
+			){
+				return JNI_EINVAL;
+		}
+
+		BOOL returnedValue = env->CallStaticBooleanMethod(platformClass, startJadeMethodID);
+
+		env->DeleteLocalRef(clazz);	//delete local ref if global OK
 
 		if (mustDetach)
 		{
 			jvm->DetachCurrentThread();
+			jvm->DestroyJavaVM();
 		}
 
 		if (returnedValue) return JNI_OK;
@@ -158,5 +181,7 @@ int Environment::startPlatform(JavaVM* jvm){
 }
 
 void Environment::close(){
+	
 	FreeLibrary(jniModule);
+	//and release globals
 }

@@ -126,6 +126,11 @@ struct CONTROLDATA_s
 
 static char*	junctionNode =     "5";   //node to control
 NODE*	jNode = NULL;
+
+//NEW
+static char* junctionList [9] = {"1", "2", "3","4","5","6","7","8","9"};
+std::vector<NODE*> junctions;
+
 static LOOPUPDATA loopUpDetectorData[8]; /* 4 upstrDetectors, 2 loops each */
 static LOOPSTDATA loopStDetectorData[8]; /* 4 stoplDetectors, 2 loops each */
 static DETECTOR* upstrDetectors[4];  /* 4-arm intersection  per approach */
@@ -223,7 +228,6 @@ int64 GetTimeMs64()
 		return ret;
 	#endif
 }
-
 
 const std::string currentDateTime() {
     time_t     now = time(0);
@@ -495,21 +499,22 @@ void qpx_NET_postOpen(void)
 
 	//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
 
-	Environment env = Environment();
+	Environment envo = Environment();
 	
 	//JavaVM* 
-		jvm_r = env.startJVM();
+		jvm_r = envo.startJVM();
 
 	
 	int stat = -10;
 	if(jvm_r != NULL)
-		stat = env.startPlatform(jvm_r);
+		stat = envo.startPlatform(jvm_r);
 
 	if (stat == 0)
 		qps_GUI_printf(">>> JADE Platform main-cointaner started!");
 	else
-		qps_GUI_printf(">>> Error starting JADE platform main-container error code=%i", stat);
+		qps_GUI_printf(">>> Error starting JADE platform main-container (error code=%i)", stat);
 	
+	//envo.close();	//untested
 
 	//1.1	create identical junction agents in JADE
 
@@ -526,7 +531,7 @@ void qpx_NET_postOpen(void)
 	//jvm_r->DetachCurrentThread();
 	//jvm_r->DestroyJavaVM();
 
-
+	//envo.close();
 }
 
 void printMe(char* message)
