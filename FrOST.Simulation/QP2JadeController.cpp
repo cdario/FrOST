@@ -229,17 +229,17 @@ int64 GetTimeMs64()
 	#endif
 }
 
-const std::string currentDateTime() {
-    time_t     now = time(0);
-    struct tm  tstruct;
-    char       buf[80];
-    tstruct = *localtime(&now);
-    // Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
-    // for more information about date/time format
-    strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
-
-    return buf;
-}
+//const std::string currentDateTime() {
+//    time_t     now = time(0);
+//    struct tm  tstruct;
+//    char       buf[80];
+//    tstruct = *localtime(&now);
+//    // Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
+//    // for more information about date/time format
+//    strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+//
+//    return buf;
+//}
 
 /* -----------------------------------------------------------------------
 * Runs algorithm on a separate thread and updates control sequence
@@ -504,10 +504,11 @@ void qpx_NET_postOpen(void)
 	//JavaVM* 
 		jvm_r = envo.startJVM();
 
+	char * junctions_a = "5";
 	
 	int stat = -10;
 	if(jvm_r != NULL)
-		stat = envo.startPlatform(jvm_r);
+		stat = envo.startPlatform(jvm_r, junctions_a);
 
 	if (stat == 0)
 		qps_GUI_printf(">>> JADE Platform main-cointaner started!");

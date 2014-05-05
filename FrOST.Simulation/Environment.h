@@ -12,7 +12,7 @@ public:
 	static jmethodID updJunctionMethodID;
 
 	JavaVM* startJVM();
-	int startPlatform(JavaVM* jvm);
+	int startPlatform(JavaVM* jvm, char* junctions);
 	int initJunction(int id);
 	HMODULE jniModule;
 	void close();

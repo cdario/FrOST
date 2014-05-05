@@ -120,7 +120,7 @@ JavaVM* Environment::startJVM()
 	return jvm;
 }
 
-int Environment::startPlatform(JavaVM* jvm){
+int Environment::startPlatform(JavaVM* jvm, char* junctions){
 
 	JNIEnv* env;
 	bool mustDetach = false;
@@ -154,7 +154,8 @@ int Environment::startPlatform(JavaVM* jvm){
 		}
 
 		//jmethodID mid = env->GetStaticMethodID(platformClass, "startJadePlatform", "()Z");	//determine signature via javap -s
-		startJadeMethodID = env->GetStaticMethodID(platformClass, "startJadePlatform", "()Z");//determine signature via javap -s
+		startJadeMethodID = env->GetStaticMethodID(platformClass, "startJadePlatform", "(Ljava/lang/String;)Z");//determine signature via javap -s
+		
 		addJunctionMethodID = env->GetStaticMethodID(platformClass, "initJunctionAgent", "(Ljava/lang/String;)Z");//determine signature via javap -s
 		updJunctionMethodID = env->GetStaticMethodID(platformClass, "updJunctionAgent", "(Ljava/lang/String;I)Z");//determine signature via javap -s
 
@@ -165,7 +166,8 @@ int Environment::startPlatform(JavaVM* jvm){
 				return JNI_EINVAL;
 		}
 
-		BOOL returnedValue = env->CallStaticBooleanMethod(platformClass, startJadeMethodID);
+		char * junc = "5";
+		BOOL returnedValue = env->CallStaticBooleanMethod(platformClass, startJadeMethodID, env->NewStringUTF(junc));
 
 		env->DeleteLocalRef(clazz);	//delete local ref if global OK
 
