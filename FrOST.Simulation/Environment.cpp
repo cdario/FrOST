@@ -157,7 +157,7 @@ int Environment::startPlatform(JavaVM* jvm, char* junctions){
 		startJadeMethodID = env->GetStaticMethodID(platformClass, "startJadePlatform", "(Ljava/lang/String;)Z");//determine signature via javap -s
 		
 		addJunctionMethodID = env->GetStaticMethodID(platformClass, "initJunctionAgent", "(Ljava/lang/String;)Z");//determine signature via javap -s
-		updJunctionMethodID = env->GetStaticMethodID(platformClass, "updJunctionAgent", "(Ljava/lang/String;I)Z");//determine signature via javap -s
+		updJunctionMethodID = env->GetStaticMethodID(platformClass, "updJunctionAgent", "(ID)Z");//determine signature via javap -s
 
 		if (startJadeMethodID == NULL 
 			|| addJunctionMethodID == NULL

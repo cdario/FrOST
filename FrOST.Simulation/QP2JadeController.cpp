@@ -127,8 +127,12 @@ struct CONTROLDATA_s
 static char*	junctionNode =     "5";   //node to control
 NODE*	jNode = NULL;
 
-//NEW
-static char* junctionList [9] = {"1", "2", "3","4","5","6","7","8","9"};
+//NEW 3x3 grid
+static char* junctionList [9] = {"5 ", "3 ", "11 ",
+								 "8 ", "9 ", "12 ",
+								 "13 ","14 ","15 "};
+
+
 std::vector<NODE*> junctions;
 
 static LOOPUPDATA loopUpDetectorData[8]; /* 4 upstrDetectors, 2 loops each */
@@ -504,7 +508,7 @@ void qpx_NET_postOpen(void)
 	//JavaVM* 
 		jvm_r = envo.startJVM();
 
-	char * junctions_a = "5";
+	char * junctions_a = "5 3 11 8 9 12 13 14 15";
 	
 	int stat = -10;
 	if(jvm_r != NULL)
