@@ -80,9 +80,11 @@ namespace CORE{
 		vector<LOOPDATA>  stoplineLoopData;
 		vector<DETECTOR*> upstreamDetectors;
 		vector<DETECTOR*>  stoplineDetectors;
-		const char*	phases [3];
+		//const char*	phases [3];
+		vector<char*> phases;
 		double leftTurnProportion; /* simplified turning proportions, must agree OD Matrix */ //nbefore 0.2
 		double rightTurnProportion;
+		//vector<string> directions;
 
 		/*state*/
 		vector<vector<SIGPRI> > phasing;	//switching rules
@@ -158,15 +160,17 @@ namespace CORE{
 		void manageThread();
 		const std::vector<CONTROLDATA> getTempSeq();
 		static unsigned __stdcall ThreadStaticFunc( void* data );
-		unsigned __stdcall ThreadFunc();
+		unsigned __stdcall ThreadFunc(void* data);
 
 		/*helpers*/
-		void loadPhasingFile();
+		void loadPhasingFile(char* phasing_file);
+		void loadPhasingFileGrid(char* phasing_file);
 		void printVectorToFile();
 		int toPrioEnum(string val);
 		std::vector<std::string> split(const std::string &s, char delim);
 		std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
-
+		//std::string JunctionCore::toNodeDirection(std::string nodeIds);
+		//string JunctionCore::replaceNode (string id);
 
 	};
 }
