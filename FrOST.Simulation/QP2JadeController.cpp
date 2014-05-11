@@ -66,7 +66,7 @@ using namespace CORE;
 static float llx = 0.0f, lly = 0.0f, urx = 0.0f, ury = 0.0f;
 static Bool rhd;
 
-
+static Environment envo;
 JavaVM* jvm_r;
 
 /* Returns the amount of milliseconds elapsed since the UNIX epoch. Works on both
@@ -247,17 +247,6 @@ void qpx_NET_postOpen(void)
 		temp = base + "WE";tdet = const_cast<char*>(temp.c_str());
 		junctionX->stoplineDetectors[3] = qpg_NET_detector(tdet);
 
-		/*
-		junctionX->upstreamDetectors[0] = qpg_NET_detector("u5NS");
-		junctionX->upstreamDetectors[1] = qpg_NET_detector("u5EW");
-		junctionX->upstreamDetectors[2] = qpg_NET_detector("u5SN");
-		junctionX->upstreamDetectors[3] = qpg_NET_detector("u5WE");
-		junctionX->stoplineDetectors.resize(4);
-		junctionX->stoplineDetectors[0] = qpg_NET_detector("s5NS");
-		junctionX->stoplineDetectors[1] = qpg_NET_detector("s5EW");
-		junctionX->stoplineDetectors[2] = qpg_NET_detector("s5SN");
-		junctionX->stoplineDetectors[3] = qpg_NET_detector("s5WE");
-		*/
 		int idxApproach = 0;
 		junctionX->upstreamLoopData.resize(8);
 		junctionX->stoplineLoopData.resize(8);
@@ -329,17 +318,19 @@ void qpx_NET_postOpen(void)
 	//1.	start jade platform, i.e., container and junction agents
 	//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
 
-	std::ostringstream oss;
+	//std::ostringstream oss;
+	string juncs; 
 	for(unsigned ix=0; ix<junctionIn.size(); ix++)
 	{
-		oss << junctionIn[ix]->id << " ";
+		juncs = juncs.append(junctionIn[ix]->id+" ");
+		//oss << junctionIn[ix]->id << " ";
 	}
 
-	char * junctions_a = const_cast<char*>(oss.str().c_str());
+	char * junctions_a = const_cast<char*>(juncs.c_str());
 
 	//= "5 3 11 8 9 12 13 14 15";
 
-	Environment envo = Environment();
+	envo = Environment();
 	//JavaVM* 
 	jvm_r = envo.startJVM();
 
@@ -508,6 +499,8 @@ void qpx_NET_timeStep()
 				}
 		}
 	}
+
+	//envo.updateJunctions(jvm_r, "", "");
 }
 
 /* ---------------------------------------------------------------------

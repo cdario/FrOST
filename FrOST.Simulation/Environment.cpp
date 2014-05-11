@@ -166,8 +166,8 @@ int Environment::startPlatform(JavaVM* jvm, char* junctions){
 				return JNI_EINVAL;
 		}
 
-		char * junc = "5";
-		BOOL returnedValue = env->CallStaticBooleanMethod(platformClass, startJadeMethodID, env->NewStringUTF(junc));
+		//char * junc = "5";
+		BOOL returnedValue = env->CallStaticBooleanMethod(platformClass, startJadeMethodID, env->NewStringUTF(junctions));
 
 		env->DeleteLocalRef(clazz);	//delete local ref if global OK
 
@@ -180,6 +180,35 @@ int Environment::startPlatform(JavaVM* jvm, char* junctions){
 		if (returnedValue) return JNI_OK;
 	}
 	return JNI_ERR;
+}
+
+int Environment::updateJunctions(JavaVM* jvm, char* junctions, char* newValues)
+{
+	JNIEnv* env;
+	bool mustDetach = false;
+
+	jint retval = jvm->GetEnv((void**)&env, JNI_VERSION_1_6);
+	if (retval == JNI_EDETACHED)
+	{
+		JavaVMAttachArgs args;
+		args.version = JNI_VERSION_1_6;
+		args.name = NULL;
+		args.group = NULL;
+		retval = jvm->AttachCurrentThread((void **)&env, &args);
+		mustDetach = true; 
+	}
+	if (retval != JNI_OK)
+		throw retval;
+
+	if (retval == JNI_OK)
+	{
+		BOOL returnedValue = env->CallStaticBooleanMethod(platformClass, updJunctionMethodID, env->NewStringUTF(junctions), env->NewStringUTF(newValues));
+	}
+	if (mustDetach)
+	{
+			jvm->DetachCurrentThread();
+			jvm->DestroyJavaVM();
+	}
 }
 
 void Environment::close(){
