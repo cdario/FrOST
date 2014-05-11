@@ -74,7 +74,7 @@ namespace CORE{
 
 	public:
 		/*definition*/
-		int id;
+		string id;
 		NODE* node;
 		vector<LOOPDATA> upstreamLoopData;
 		vector<LOOPDATA>  stoplineLoopData;
@@ -84,7 +84,7 @@ namespace CORE{
 		vector<char*> phases;
 		double leftTurnProportion; /* simplified turning proportions, must agree OD Matrix */ //nbefore 0.2
 		double rightTurnProportion;
-		//vector<string> directions;
+		vector<string> directions;
 
 		/*state*/
 		vector<vector<SIGPRI> > phasing;	//switching rules
@@ -164,13 +164,15 @@ namespace CORE{
 
 		/*helpers*/
 		void loadPhasingFile(char* phasing_file);
-		void loadPhasingFileGrid(char* phasing_file);
+		void loadPhasingFileGrid(char* phasing_file, vector<string> dirs);
 		void printVectorToFile();
 		int toPrioEnum(string val);
 		std::vector<std::string> split(const std::string &s, char delim);
 		std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
 		//std::string JunctionCore::toNodeDirection(std::string nodeIds);
 		//string JunctionCore::replaceNode (string id);
+		string  replaceDir(string line);
+		string  string_replace( string src, string const& target, string const& repl);
 
 	};
 }

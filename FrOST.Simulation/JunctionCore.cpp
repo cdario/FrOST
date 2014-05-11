@@ -39,48 +39,8 @@ namespace CORE{
 #define		UPSTREAM_DETECTOR_DISTANCE 150 //700       /* metres */
 #define		VEHICLE_LENGTH 5       /* metres */
 
-
-	//enum loopType{
-	//	UPSTREAM, DOWNSTREAM
-	//};
-	//
-	//typedef struct LOOPDATA_s    LOOPDATA;
-	//struct LOOPDATA_s
-	//{
-	//	LOOP* loop;
-	//	DETECTOR * detector;
-	//	loopType type;
-	//	int lane;
-	//	int lastCount;
-	//	int approach;
-	//};
-	//
-	//typedef struct SIGPRI_s    SIGPRI;
-	//struct SIGPRI_s
-	//{
-	//	string inlink;
-	//	string outlink;
-	//	int	  priority;    
-	//};
-	//
-	//typedef struct ARRIVALDATA_s    ARRIVALDATA;
-	//struct ARRIVALDATA_s		/*	 represent vehicles inside the prediction horizon	*/
-	//{
-	//	float arrivalTime;
-	//	float detectionTime;
-	//	float speed;
-	//	int phase;
-	//};
-	//
-	//typedef struct CONTROLDATA_s    CONTROLDATA;
-	//struct CONTROLDATA_s
-	//{
-	//	int phase;
-	//	int duration;
-	//};
-
 	/*definition*/
-	int id;
+	string id;
 	NODE* node;
 	vector<LOOPDATA> upstreamLoopData;
 	vector<LOOPDATA>  stoplineLoopData;
@@ -167,6 +127,8 @@ namespace CORE{
 		char* vv[3] = { "A","B","C" };
 		phases.assign(&vv[0], &vv[0]+3);
 		//phases = {"A","B","C"};
+
+		directions.resize(5);
 	}
 
 	JunctionCore::~JunctionCore(){
@@ -177,14 +139,6 @@ namespace CORE{
 	* Thread function!
 	* --------------------------------------------------------------------- */
 
-	//unsigned __stdcall JunctionCore::ThreadStaticFunc( void* data ){
-	//	JunctionCore * pthX = (JunctionCore*)data;   // the tricky cast
-	//	pthX->ThreadFunc();           // now call the true entry-point-function
-	//    // A thread terminates automatically if it completes execution,
-	//    // or it can terminate itself with a call to _endthread().
-	//    return 1;          // the thread exit code
-	//}
-
 	unsigned __stdcall JunctionCore::ThreadStaticFunc( void* data ){
 		JunctionCore * pthX = (JunctionCore*)data;   // the tricky cast
 		pthX->ThreadFunc(data);           // now call the true entry-point-function
@@ -192,7 +146,6 @@ namespace CORE{
 		// or it can terminate itself with a call to _endthread().
 		return 1;          // the thread exit code
 	}
-
 
 	unsigned __stdcall JunctionCore::ThreadFunc(void * data)
 	{
@@ -224,7 +177,7 @@ namespace CORE{
 			agentController.setNewReward(currentDelay - prevDelay); //6.2
 			agentController.updateQ();	//7
 			agentController.updateState(); //8
-			qps_GUI_printf("\aJ-%i: Obtained REWARD of {%4.2fs}", id,currentDelay - prevDelay);
+			qps_GUI_printf("\aJ-%s: Obtained REWARD of {%4.2fs}", id.c_str(),currentDelay - prevDelay);
 			actionTaken = false;	//NEW
 		}
 		/* ------end RL interaction steps-------	*/
@@ -271,7 +224,7 @@ namespace CORE{
 				break;
 			}
 
-			qps_GUI_printf("\aJ-%i %i:%4.1f \t %s %s",id,(int)hh ,mm, message.str().c_str(), act);
+			qps_GUI_printf("\aJ-%s %i:%4.1f \t %s %s",id.c_str(),(int)hh ,mm, message.str().c_str(), act);
 			// ttaken -> for Q-Learning simple table look-up
 			//qps_GUI_printf("\a Core: %im:%4.1fs \t%4.2fs \t %s %s",(int)hh ,mm, ttaken, message.str().c_str(), act);
 		}
@@ -330,6 +283,87 @@ namespace CORE{
 
 				phasing[iPhase][iMov].inlink = prio[0];
 				phasing[iPhase][iMov].outlink = prio[1];
+				phasing[iPhase][iMov].priority = toPrioEnum(prio[2]);
+
+				if (iMov == 9)
+				{
+					iMov = 0;
+					iPhase ++;
+				}
+				else
+					iMov++;
+			}
+			myfile.close();
+			qps_GUI_printf(">>> Loaded phasing specs from file"); 
+		}
+
+		else qps_GUI_printf(">>> Unable to open phasing file"); 
+
+	}
+
+	string  JunctionCore::string_replace( string src, string const& target, string const& repl)
+	{
+		// handle error situations/trivial cases
+ 
+		if (target.length() == 0) {
+		// searching for a match to the empty string will result in
+		// an infinite loop
+		// it might make sense to throw an exception for this case
+		return src;
+		}
+ 
+		if (src.length() == 0) {
+		return src; // nothing to match against
+		}
+ 
+		for (size_t idx = src.find( target); idx != string::npos; idx = src.find( target, idx)) {
+		src.replace( idx, target.length(), repl);
+		idx += repl.length();
+		}
+ 
+		return src;
+	}
+
+	string  JunctionCore::replaceDir(string line)
+	{
+		line = string_replace(line, "o",directions[0]);
+		line = string_replace(line, "n",directions[1]);
+		line = string_replace(line, "s",directions[2]);
+		line = string_replace(line, "e",directions[3]);
+		line = string_replace(line, "w",directions[4]);
+
+		return line;	
+	}
+
+	void JunctionCore::loadPhasingFileGrid(char * phasing_file, vector<string> dirs)
+	{
+		string line;
+		ifstream myfile (phasing_file);
+		int iPhase = 0;
+		int iMov = 0;
+		directions = dirs;
+		if(myfile.is_open())
+		{
+			while (getline (myfile,line))
+			{
+				//nsew#
+				/*line.replace(line.begin(), line.end(), "o", dirs[0].c_str());
+				line.replace(line.begin(), line.end(), "n", dirs[1].c_str());
+				line.replace(line.begin(), line.end(), "s", dirs[2].c_str());
+				line.replace(line.begin(), line.end(), "e", dirs[3].c_str());
+				line.replace(line.begin(), line.end(), "w", dirs[4].c_str());*/
+
+
+				//string origin = dirs[0];
+				//string north = dirs[1];
+				//string south = dirs[2];
+				//string east = dirs[3];
+				//string west = dirs[4];
+					
+				string repline = replaceDir(line);
+				std::vector<std::string> prio =  split(repline, ' ');
+				phasing[iPhase][iMov].inlink = replaceDir(prio[0]);
+				phasing[iPhase][iMov].outlink = replaceDir(prio[1]);
 				phasing[iPhase][iMov].priority = toPrioEnum(prio[2]);
 
 				if (iMov == 9)
@@ -717,14 +751,14 @@ namespace CORE{
 	void JunctionCore::setControllerAllRed()
 	{
 		setController(0, APIPRI_BARRED);
-		qps_GUI_printf("--------->J-%i set to RED for %is",id, ALL_RED); 
+		qps_GUI_printf("--------->J-%s set to RED for %is",id.c_str(), ALL_RED); 
 	}
 
 	void JunctionCore::setControllerNext(int ph)
 	{
 		currentPhaseIndex = ph;
 		setController(ph, APIPRI_MAJOR);
-		qps_GUI_printf("------------->J-%i set to [%s] for %is",id, phases[ph], currentControl); 
+		qps_GUI_printf("------------->J-%s set to [%s] for %is",id.c_str(), phases[ph], currentControl); 
 	}
 
 	/* ---------------------------------------------------------------------

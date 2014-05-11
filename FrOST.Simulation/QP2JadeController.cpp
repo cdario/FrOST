@@ -110,147 +110,188 @@ int64 GetTimeMs64()
 * called on startup, initialise and instantiate variables
 * --------------------------------------------------------------------- */
 
-JunctionCore junction5;
+
+vector< vector<string> > nodeConfig;
+vector<JunctionCore> junctionIn;
+
+
+std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
+	std::stringstream ss(s);
+	std::string item;
+	while (std::getline(ss, item, delim)) {
+		elems.push_back(item);
+	}
+	return elems;
+}
+
+std::vector<std::string> split(const std::string &s, char delim) {
+	std::vector<std::string> elems;
+	split(s, delim, elems);
+	return elems;
+}
+
+void loadNodeConfig(char* config_file)
+{
+	string line;
+	ifstream myfile (config_file);
+	vector<string> directionSet;
+
+	directionSet.resize(5);
+	if(myfile.is_open())
+	{
+		while ( std::getline(myfile,line) )
+		{
+			std::vector<std::string> dire = split(line, ' ');
+
+			for (unsigned int y =0; y<dire.size(); y++)
+			{
+				directionSet[y] = dire[y];
+			}
+			nodeConfig.push_back(directionSet);
+		}
+		myfile.close();
+		qps_GUI_printf(">>> Loaded Node configuration from file"); 
+	}
+
+	else qps_GUI_printf(">>> Unable to open node config file"); 
+
+	//vector<vector(int)> allDirections;
+	
+}
 
 void qpx_NET_postOpen(void)
 {
-
-	/* 
-	*1 load large phasing file for all junctions
-
-	for each junction
-	obtain NODE* instance
-	set external controller
-	load phasing file *1
-	keep and initialise arrivals horizon	
-	initialise loop detector data structures
-	create controller instance 
-	*/
-
+	loadNodeConfig("c:\\temp\\node_config.txt");	//contains controlled nodes configuration
 	std::vector<int64> stamps;
 	int64 tempI = 0;
-	ostringstream convert;
-
-	junction5 = JunctionCore();
-	junction5.id = 5;
-	std::string s;
-	std::stringstream outId;
-	outId << junction5.id;
-	junction5.node = qpg_NET_node(const_cast<char*>(outId.str().c_str()));
-	qps_NDE_externalController(junction5.node,PTRUE);
-	junction5.phasing.resize(PHASE_COUNT);
-
-	for (int p=0; p < PHASE_COUNT; p++)
+	for(unsigned i=0; i < nodeConfig.size(); i++)
 	{
-		junction5.phasing[p].resize(MOVEMENT_COUNT);
-	}
-	//tempI = GetTimeMs64();stamps.push_back(tempI);
+		vector<string> tJunction = nodeConfig[i];
+		JunctionCore junctionX = JunctionCore(); //create new junction 
+		junctionX.id = tJunction[0];
+		junctionX.node = qpg_NET_node(const_cast<char*>(tJunction[0].c_str()));
 
-	junction5.loadPhasingFile("c:\\temp\\phasing.txt");
-	//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
-
-	// clockwise
-	junction5.arrivalsHorizon.resize(HORIZON_SIZE);
-	for (int h= 0; h < HORIZON_SIZE; h++)
-	{
-		junction5.arrivalsHorizon[h].resize(PHASE_COUNT);
+		qps_NDE_externalController(junctionX.node,PTRUE);
+		junctionX.phasing.resize(PHASE_COUNT);
 
 		for (int p=0; p < PHASE_COUNT; p++)
 		{
-			// TODO: this step might be slowing down onload();
-			junction5.arrivalsHorizon[h][p]=0; //Init all to zero
+			junctionX.phasing[p].resize(MOVEMENT_COUNT);
 		}
+		//tempI = GetTimeMs64();stamps.push_back(tempI);
+
+		//junctionX.loadPhasingFileGrid("c:\\temp\\node_config_+id+.txt", tJunction);
+		junctionX.loadPhasingFileGrid("c:\\temp\\phasing_4dir.txt", tJunction);
+		//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
+
+		// clockwise
+		junctionX.arrivalsHorizon.resize(HORIZON_SIZE);
+		for (int h= 0; h < HORIZON_SIZE; h++)
+		{
+			junctionX.arrivalsHorizon[h].resize(PHASE_COUNT);
+
+			for (int p=0; p < PHASE_COUNT; p++)
+			{
+				// TODO: this step might be slowing down onload();
+				junctionX.arrivalsHorizon[h][p]=0; //Init all to zero
+			}
+		}
+		//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
+		junctionX.upstreamDetectors.resize(4);
+		junctionX.upstreamDetectors[0] = qpg_NET_detector("u5NS");
+		junctionX.upstreamDetectors[1] = qpg_NET_detector("u5EW");
+		junctionX.upstreamDetectors[2] = qpg_NET_detector("u5SN");
+		junctionX.upstreamDetectors[3] = qpg_NET_detector("u5WE");
+		junctionX.stoplineDetectors.resize(4);
+		junctionX.stoplineDetectors[0] = qpg_NET_detector("s5NS");
+		junctionX.stoplineDetectors[1] = qpg_NET_detector("s5EW");
+		junctionX.stoplineDetectors[2] = qpg_NET_detector("s5SN");
+		junctionX.stoplineDetectors[3] = qpg_NET_detector("s5WE");
+
+		int idxApproach = 0;
+		junctionX.upstreamLoopData.resize(8);
+		junctionX.stoplineLoopData.resize(8);
+		for (int i = 0; i < 8 ; i ++)	// 2 lanes at each upstream
+		{
+			int laneDet = i%NUM_LANES + 1;  // 1 or 2
+			junctionX.upstreamLoopData[i].detector = junctionX.upstreamDetectors[idxApproach];
+			junctionX.upstreamLoopData[i].loop = qpg_DTC_multipleLoop(junctionX.upstreamDetectors[idxApproach], laneDet);
+			junctionX.upstreamLoopData[i].lane = laneDet;
+			junctionX.upstreamLoopData[i].lastCount = 0;
+			junctionX.upstreamLoopData[i].type = UPSTREAM;
+
+			junctionX.upstreamLoopData[i].approach = idxApproach; //NEW
+
+			junctionX.stoplineLoopData[i].detector = junctionX.stoplineDetectors[idxApproach];
+			junctionX.stoplineLoopData[i].loop = qpg_DTC_multipleLoop(junctionX.stoplineDetectors[idxApproach], laneDet);
+			junctionX.stoplineLoopData[i].lane = laneDet;
+			junctionX.stoplineLoopData[i].lastCount = 0;
+			junctionX.stoplineLoopData[i].type = STOPLINE;
+
+			junctionX.stoplineLoopData[i].approach = idxApproach; //NEW
+
+			idxApproach = idxApproach + i%2; // +1 every 2 cycles
+			/*
+			loop 0	1	2	3	4	5	6	7	
+			appr 0	0	1	1	2	2	3	3
+			*/
+		}
+		tempI = GetTimeMs64(); 	stamps.push_back(tempI);
+		/********		 Agent instance(s)		******/
+
+		junctionX.agentController = REAP1::ReAP1();
+
+		//instances.push_back(rp);  /*	includes policy instance */
+		//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
+		junctionX.agentController.setMaxPhCompute(MAX_SEQUENCE);
+		junctionX.agentController.setOutput(false);
+		//junction5.agentController.setInitialPhase(2);
+		junctionX.agentController.setStartupLostTime(2.0);
+		junctionX.agentController.setMinGreenTime(MIN_GREEN);
+		junctionX.agentController.setMaxGreenTime(MAX_GREEN);
+		junctionX.agentController.setRedTime(ALL_RED);
+
+		junctionX.agentController.setSaturationFlow(0, 1800); //in vehicles-per-hour per-lane 
+		junctionX.agentController.setSaturationFlow(1, 1400);
+		junctionX.agentController.setSaturationFlow(2, 1800);
+
+		junctionX.agentController.setLanePhases(0, 1); //no. of lanes for each phase, used for saturation flow
+		junctionX.agentController.setLanePhases(1, 1);
+		junctionX.agentController.setLanePhases(2, 2);
+
+		//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
+
+		REAP1::ReAP1Policy::REAP1STATE inState;
+		inState.greenRemaining = MAX_GREEN;
+		inState.phaseIndex = 2;
+		std::vector<int> ques; ques.push_back(0); ques.push_back(0); ques.push_back(0);
+		inState.queueLengths = ques; 
+		junctionX.agentController.getPolicy().setState(inState);
+		junctionX.agentController.setInitialState(inState);		//3
+		junctionX.xState = inState;
+
+		junctionX.currentPhaseIndex = inState.phaseIndex;		//NEW
+		junctionX.timeToRed = (float)inState.greenRemaining;
+		srand((int)time(NULL));
+		junctionIn.push_back(junctionX);
 	}
-	//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
-	junction5.upstreamDetectors.resize(4);
-	junction5.upstreamDetectors[0] = qpg_NET_detector("u5NS");
-	junction5.upstreamDetectors[1] = qpg_NET_detector("u5EW");
-	junction5.upstreamDetectors[2] = qpg_NET_detector("u5SN");
-	junction5.upstreamDetectors[3] = qpg_NET_detector("u5WE");
-	junction5.stoplineDetectors.resize(4);
-	junction5.stoplineDetectors[0] = qpg_NET_detector("s5NS");
-	junction5.stoplineDetectors[1] = qpg_NET_detector("s5EW");
-	junction5.stoplineDetectors[2] = qpg_NET_detector("s5SN");
-	junction5.stoplineDetectors[3] = qpg_NET_detector("s5WE");
-
-	int idxApproach = 0;
-	junction5.upstreamLoopData.resize(8);
-	junction5.stoplineLoopData.resize(8);
-	for (int i = 0; i < 8 ; i ++)	// 2 lanes at each upstream
-	{
-		int laneDet = i%NUM_LANES + 1;  // 1 or 2
-		junction5.upstreamLoopData[i].detector = junction5.upstreamDetectors[idxApproach];
-		junction5.upstreamLoopData[i].loop = qpg_DTC_multipleLoop(junction5.upstreamDetectors[idxApproach], laneDet);
-		junction5.upstreamLoopData[i].lane = laneDet;
-		junction5.upstreamLoopData[i].lastCount = 0;
-		junction5.upstreamLoopData[i].type = UPSTREAM;
-
-		junction5.upstreamLoopData[i].approach = idxApproach; //NEW
-
-		junction5.stoplineLoopData[i].detector = junction5.stoplineDetectors[idxApproach];
-		junction5.stoplineLoopData[i].loop = qpg_DTC_multipleLoop(junction5.stoplineDetectors[idxApproach], laneDet);
-		junction5.stoplineLoopData[i].lane = laneDet;
-		junction5.stoplineLoopData[i].lastCount = 0;
-		junction5.stoplineLoopData[i].type = STOPLINE;
-
-		junction5.stoplineLoopData[i].approach = idxApproach; //NEW
-
-		idxApproach = idxApproach + i%2; // +1 every 2 cycles
-		/*
-		loop 0	1	2	3	4	5	6	7	
-		appr 0	0	1	1	2	2	3	3
-		*/
-	}
-	tempI = GetTimeMs64(); 	stamps.push_back(tempI);
-	/********		 Agent instance(s)		******/
-
-	junction5.agentController = REAP1::ReAP1();
-
-	//instances.push_back(rp);  /*	includes policy instance */
-	//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
-	junction5.agentController.setMaxPhCompute(MAX_SEQUENCE);
-	junction5.agentController.setOutput(false);
-	//junction5.agentController.setInitialPhase(2);
-	junction5.agentController.setStartupLostTime(2.0);
-	junction5.agentController.setMinGreenTime(MIN_GREEN);
-	junction5.agentController.setMaxGreenTime(MAX_GREEN);
-	junction5.agentController.setRedTime(ALL_RED);
-
-	junction5.agentController.setSaturationFlow(0, 1800); //in vehicles-per-hour per-lane 
-	junction5.agentController.setSaturationFlow(1, 1400);
-	junction5.agentController.setSaturationFlow(2, 1800);
-
-	junction5.agentController.setLanePhases(0, 1); //no. of lanes for each phase, used for saturation flow
-	junction5.agentController.setLanePhases(1, 1);
-	junction5.agentController.setLanePhases(2, 2);
-
-	//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
-
-	REAP1::ReAP1Policy::REAP1STATE inState;
-	inState.greenRemaining = MAX_GREEN;
-	inState.phaseIndex = 2;
-	std::vector<int> ques; ques.push_back(0); ques.push_back(0); ques.push_back(0);
-	inState.queueLengths = ques; 
-	junction5.agentController.getPolicy().setState(inState);
-	junction5.agentController.setInitialState(inState);		//3
-	junction5.xState = inState;
-
-	junction5.currentPhaseIndex = inState.phaseIndex;		//NEW
-	junction5.timeToRed = (float)inState.greenRemaining;
-	srand((int)time(NULL));
-
-	 //initialise communication with JADE here and intersection agents
-
+	//initialise communication with JADE here and intersection agents
 	//1.	start jade platform, i.e., container and junction agents
-
 	//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
+
+	std::ostringstream oss;
+	for(unsigned ix=0; ix<junctionIn.size(); ix++)
+	{
+		oss << junctionIn[ix].id << " ";
+	}
+
+	char * junctions_a = const_cast<char*>(oss.str().c_str());
+
+	//= "5 3 11 8 9 12 13 14 15";
 
 	Environment envo = Environment();
-
 	//JavaVM* 
 	jvm_r = envo.startJVM();
-
-	char * junctions_a = "5 3 11 8 9 12 13 14 15";
 
 	int stat = -10;
 	if(jvm_r != NULL)
@@ -313,106 +354,110 @@ void qpx_NET_timeStep()
 	float step = qpg_CFG_timeStep();
 	float currentTime = qpg_CFG_simulationTime();
 
-	junction5.probeUpstreamDetectors(currentTime);
-	//probeUpstreamDetectors(currentTime);
-
-	/* ---------------------------------------------------------------------
-	* populate prediction horizon with arrival and queue estimates
-	* --------------------------------------------------------------------- */
-	junction5.updateHorizon(currentTime);
-	junction5.estimateQueues(currentTime);
-	junction5.estimateDelay();
-	junction5.updateState();	//pre-5
-
-	junction5.manageThread();
-
-	junction5.timeToRed = junction5.lastControlTime + junction5.currentControl; /*	switch points	*/
-	junction5.timeToNext = junction5.timeToRed + ALL_RED;
-	//qps_GUI_printf("toRed %f --- toNxt %f", timeToRed, timeToNext);
-	if (junction5.isSequenceReady)
+	for (unsigned i = 0; i < junctionIn.size(); i++)
 	{
-		if (junction5.action == 0)
+
+		junctionIn[i].probeUpstreamDetectors(currentTime);
+		//probeUpstreamDetectors(currentTime);
+
+		/* ---------------------------------------------------------------------
+		* populate prediction horizon with arrival and queue estimates
+		* --------------------------------------------------------------------- */
+		junctionIn[i].updateHorizon(currentTime);
+		junctionIn[i].estimateQueues(currentTime);
+		junctionIn[i].estimateDelay();
+		junctionIn[i].updateState();	//pre-5
+
+		junctionIn[i].manageThread();
+
+		junctionIn[i].timeToRed = junctionIn[i].lastControlTime + junctionIn[i].currentControl; /*	switch points	*/
+		junctionIn[i].timeToNext = junctionIn[i].timeToRed + ALL_RED;
+		//qps_GUI_printf("toRed %f --- toNxt %f", timeToRed, timeToNext);
+		if (junctionIn[i].isSequenceReady)
 		{
-			junction5.timeToNext = junction5.timeToRed;
-			junction5.isAllRed = false;
+			if (junctionIn[i].action == 0)
+			{
+				junctionIn[i].timeToNext = junctionIn[i].timeToRed;
+				junctionIn[i].isAllRed = false;
+			}
+
+			if (!junctionIn[i].isAllRed)									/*	discard sequences till next phase	*/	
+			{
+				//NEW!! TODO: test
+				std::vector<CONTROLDATA> _new;
+				_new = junctionIn[i].tempSeq;
+				std::vector<CONTROLDATA>::const_iterator iterator = _new.begin();
+				junctionIn[i].controlSeq.clear();							
+				junctionIn[i].controlSeq.reserve(_new.size());
+				while(iterator != _new.end())
+				{
+					junctionIn[i].controlSeq.push_back(*iterator);
+					++iterator;
+				}
+
+			}
+			else
+				//{
+				//	if (timeToNext >= currentTime)
+				//	{
+				//		isAllRed = false;	// TODO: improve fix
+				//	}
+				//}
+
+				if (junctionIn[i].isFirstTime)
+				{
+					junctionIn[i].timeToNext = currentTime;
+					junctionIn[i].isFirstTime =false;
+					junctionIn[i].isAllRed = false;
+				}
+
+				if (junctionIn[i].timeToRed-1 == currentTime)	//NEW	// TODO: tweak based on algo time
+				{								
+					junctionIn[i].actionTaken = true;		// control point: 2 secs before end of phase; compute next action
+				}
+
+				if (junctionIn[i].timeToRed == currentTime)	//NEW
+				{
+					if (junctionIn[i].action != 0)
+					{
+						junctionIn[i].setControllerAllRed();
+						junctionIn[i].isAllRed = true;
+					}
+					else
+					{
+						junctionIn[i].isAllRed = false;
+					}
+				}
+
+				if (junctionIn[i].timeToNext == currentTime)
+				{
+					if(junctionIn[i].controlSeq.size() > 0)						/* at this point, control and temp seqs are the same */
+					{
+						CONTROLDATA nxt = junctionIn[i].controlSeq.back();
+						junctionIn[i].controlSeq.pop_back();
+						if (junctionIn[i].isAllRed)
+							junctionIn[i].tempSeq.clear();
+						//tempSeq.pop_back();
+						junctionIn[i].currentControl = nxt.duration;
+						junctionIn[i].setControllerNext(nxt.phase);
+						junctionIn[i].nextPhase = nxt.phase;
+
+						//* MOVED HERE
+						junctionIn[i].nextPhase = (junctionIn[i].nextPhase == 2) ? 0: junctionIn[i].nextPhase+1;		/*	prepare next phase	*/
+						junctionIn[i].lastControlTime = currentTime;
+					}
+
+					//* WAS HERE
+					junctionIn[i].isAllRed = false;
+				}else							//TODO: manage all red lock
+				{
+					if (junctionIn[i].timeToNext < currentTime)
+					{
+						junctionIn[i].isAllRed = false;
+						junctionIn[i].lastControlTime = currentTime;
+					}
+				}
 		}
-
-		if (!junction5.isAllRed)									/*	discard sequences till next phase	*/	
-		{
-			//NEW!! TODO: test
-			std::vector<CONTROLDATA> _new;
-			_new = junction5.tempSeq;
-			std::vector<CONTROLDATA>::const_iterator i = _new.begin();
-			junction5.controlSeq.clear();							
-			junction5.controlSeq.reserve(_new.size());
-			while(i != _new.end())
-			{
-				junction5.controlSeq.push_back(*i);
-				++i;
-			}
-
-		}
-		else
-			//{
-			//	if (timeToNext >= currentTime)
-			//	{
-			//		isAllRed = false;	// TODO: improve fix
-			//	}
-			//}
-
-			if (junction5.isFirstTime)
-			{
-				junction5.timeToNext = currentTime;
-				junction5.isFirstTime =false;
-				junction5.isAllRed = false;
-			}
-
-			if (junction5.timeToRed-1 == currentTime)	//NEW	// TODO: tweak based on algo time
-			{								
-				junction5.actionTaken = true;		// control point: 2 secs before end of phase; compute next action
-			}
-
-			if (junction5.timeToRed == currentTime)	//NEW
-			{
-				if (junction5.action != 0)
-				{
-					junction5.setControllerAllRed();
-					junction5.isAllRed = true;
-				}
-				else
-				{
-					junction5.isAllRed = false;
-				}
-			}
-
-			if (junction5.timeToNext == currentTime)
-			{
-				if(junction5.controlSeq.size() > 0)						/* at this point, control and temp seqs are the same */
-				{
-					CONTROLDATA nxt = junction5.controlSeq.back();
-					junction5.controlSeq.pop_back();
-					if (junction5.isAllRed)
-						junction5.tempSeq.clear();
-					//tempSeq.pop_back();
-					junction5.currentControl = nxt.duration;
-					junction5.setControllerNext(nxt.phase);
-					junction5.nextPhase = nxt.phase;
-
-					//* MOVED HERE
-					junction5.nextPhase = (junction5.nextPhase == 2) ? 0: junction5.nextPhase+1;		/*	prepare next phase	*/
-					junction5.lastControlTime = currentTime;
-				}
-
-				//* WAS HERE
-				junction5.isAllRed = false;
-			}else							//TODO: manage all red lock
-			{
-				if (junction5.timeToNext < currentTime)
-				{
-					junction5.isAllRed = false;
-					junction5.lastControlTime = currentTime;
-				}
-			}
 	}
 }
 
@@ -424,7 +469,7 @@ void qpx_GUI_keyPress(int key, int ctrl, int shift, int left, int middle, int ri
 {
 	if(key == 0x33 && middle) /* print to file on 3 key + mid click */
 	{
-		junction5.printVectorToFile();
+		//junctionIn[0].printVectorToFile();
 		qps_GUI_printf("********* PRINTED ************");
 	}
 }
