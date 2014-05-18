@@ -29,7 +29,7 @@ namespace REAP1{
 
 	ReAP1Policy::ReAP1Policy(){
 		
-		initQValues(0.0000000000000000001 * rand());
+		//initQValues(0.0000000000000000001 * rand());	//TODO: remove
 		std::vector<int> queueSt;
 		queueSt.clear();queueSt.push_back(0);queueSt.push_back(0);queueSt.push_back(0);
 		tState = getStateInstance(queueSt, 0, 0);	// TODO: improve initial state
@@ -58,7 +58,7 @@ namespace REAP1{
 	// TODO: make this function faster, slows down DLL load
 	void ReAP1Policy::initQValues(double iValue){
 		
-
+		return; //TODO: remove
 		// TODO: try without initialisating- When updating set rnd value and add key-value pair
 		for (int cph=0; cph<3; cph++)	/*	build all possible state representations	*/
 		{
@@ -100,9 +100,15 @@ namespace REAP1{
 
 	std::vector< double> ReAP1Policy::getQvalues(REAP1STATE state){
 		std::vector< double> newQ;
-		newQ.push_back(Q[state].qValue3);
-		newQ.push_back(Q[state].qValue2);
-		newQ.push_back(Q[state].qValue1);
+		//newQ.push_back(Q[state].qValue3);
+		//newQ.push_back(Q[state].qValue2);
+		//newQ.push_back(Q[state].qValue1);
+
+		newQ.push_back(0.0);
+		newQ.push_back(0.0);
+		newQ.push_back(0.0);	//TODO: remove
+
+
 
 		//newQ.reserve(Q[state].size());
 		//newQ.swap (Q[state]);
@@ -154,7 +160,7 @@ namespace REAP1{
 	}
 
 	void ReAP1Policy::setQvalue(REAP1STATE state, int action, double newQ){
-
+		return; // TODO: remove
 		switch (action)
 		{
 			case 0: Q[state].qValue1 = newQ;
@@ -169,6 +175,8 @@ namespace REAP1{
 
 	double ReAP1Policy::getQvalue(REAP1STATE state, int action){
 		//return Q[state][action];
+		return 0.0;	//TODO: quick fix
+
 		switch (action)
 		{
 			case 0: return Q[state].qValue1; break;
@@ -179,6 +187,8 @@ namespace REAP1{
 	}
 
 	double ReAP1Policy::getMaxQvalue(REAP1STATE state){
+		
+		return 0.001;//TODO: remove
 		double maxQ = -DBL_MAX;
 		std::vector< double> qValues = getQvalues(state);
 		for (unsigned int a= 0; a< qValues.size(); a++)

@@ -157,7 +157,7 @@ int Environment::startPlatform(JavaVM* jvm, char* junctions){
 		startJadeMethodID = env->GetStaticMethodID(platformClass, "startJadePlatform", "(Ljava/lang/String;)Z");//determine signature via javap -s
 		
 		addJunctionMethodID = env->GetStaticMethodID(platformClass, "initJunctionAgent", "(Ljava/lang/String;)Z");//determine signature via javap -s
-		updJunctionMethodID = env->GetStaticMethodID(platformClass, "updJunctionAgent", "(ID)Z");//determine signature via javap -s
+		updJunctionMethodID = env->GetStaticMethodID(platformClass, "updJunctionAgent", "(Ljava/lang/String;)Ljava/lang/String;");//determine signature via javap -s
 
 		if (startJadeMethodID == NULL 
 			|| addJunctionMethodID == NULL
@@ -182,11 +182,12 @@ int Environment::startPlatform(JavaVM* jvm, char* junctions){
 	return JNI_ERR;
 }
 
-int Environment::updateJunctions(JavaVM* jvm, char* junctions, char* newValues)
+std::string Environment::updateJunctions(JavaVM* jvm, char* junctions_values)
 {
 	JNIEnv* env;
 	bool mustDetach = false;
-
+	const char *inCStr;
+	std::string output;
 	jint retval = jvm->GetEnv((void**)&env, JNI_VERSION_1_6);
 	if (retval == JNI_EDETACHED)
 	{
@@ -202,13 +203,29 @@ int Environment::updateJunctions(JavaVM* jvm, char* junctions, char* newValues)
 
 	if (retval == JNI_OK)
 	{
-		BOOL returnedValue = env->CallStaticBooleanMethod(platformClass, updJunctionMethodID, env->NewStringUTF(junctions), env->NewStringUTF(newValues));
+		//BOOL returnedValue = env->CallStaticBooleanMethod(platformClass, updJunctionMethodID, env->NewStringUTF(junctions), env->NewStringUTF(newValues));
+		jstring returnedValue = (jstring)env->CallStaticObjectMethod(platformClass, updJunctionMethodID, env->NewStringUTF(junctions_values));
+		//env->DeleteLocalRef(platformClass); 
+		// Step 1: Convert the JNI String (jstring) into C-String (char*)
+	   inCStr = env->GetStringUTFChars(returnedValue, NULL);
+
+	   // Step 2: Perform its intended operations and release
+	   if (NULL == inCStr) output = "";
+		else{
+			std::string temp(inCStr);
+			output = temp;
+		}
+		env->ReleaseStringUTFChars(returnedValue, inCStr); 
+
 	}
 	if (mustDetach)
 	{
 			jvm->DetachCurrentThread();
 			jvm->DestroyJavaVM();
 	}
+
+	
+	return output;
 }
 
 void Environment::close(){

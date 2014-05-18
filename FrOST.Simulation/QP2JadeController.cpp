@@ -500,6 +500,7 @@ void qpx_NET_timeStep()
 		}
 	}
 
+	envo.updateJunctions(jvm_r,"5 10");
 	//envo.updateJunctions(jvm_r, "", "");
 }
 

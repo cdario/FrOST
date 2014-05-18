@@ -743,7 +743,7 @@ namespace CORE{
 				priority = pri;
 			else
 				priority = phasing[ph][i].priority;
-
+			//qps_GUI_printf("Links %s %s %i",inlnk, outlnk, priority); 
 			qps_LNK_priority(qpg_NET_link(inlnk), qpg_NET_link(outlnk), priority);
 		}     
 	}

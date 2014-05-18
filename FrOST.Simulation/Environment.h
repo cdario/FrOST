@@ -14,7 +14,7 @@ public:
 	JavaVM* startJVM();
 	int startPlatform(JavaVM* jvm, char* junctions);
 	int initJunction(int id);
-	int updateJunctions(JavaVM* jvm, char* junctions, char* newValues);
+	std::string updateJunctions(JavaVM* jvm, char* junctions_values);
 	HMODULE jniModule;
 	void close();
 

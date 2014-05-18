@@ -487,8 +487,8 @@ namespace REAP1{
 
 		tQ = policy.getQvalue(state, action);
 		maxQ = policy.getMaxQvalue(newState);
-
-		nQ = tQ + alpha * (reward + gamma * maxQ - tQ);		/*	compute new Q	*/
+		// update rule for the Q-function, based on Bellman
+		nQ = tQ + alpha * (reward + gamma * maxQ - tQ);		/*	compute new Q */
 		policy.setQvalue(state, action, nQ);		/* update Q-table*/
 
 	}
