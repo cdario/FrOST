@@ -1,3 +1,7 @@
+//************************************************
+
+// This is the main DLL file.
+//#include "stdafx.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -9,8 +13,8 @@
 #include <float.h>
 #include <ctime>
 #include <cstdlib>
-#include "REAP1.h"
-#include "REAP1Policy.h"
+#include "AppQLearning.h"
+#include "AppQLearningPolicy.h"
 
 /*
 MS bug and workaround: use std::vector  http://support.microsoft.com/kb/243444
@@ -25,58 +29,58 @@ namespace std {
 
 using namespace std;
 
-namespace REAP1{
+namespace APPQL{
 
 /* ---------------------------------------------------------------------
  * access
  * --------------------------------------------------------------------- */
 
-	void ReAP1::setOutput(bool option){
+	void AppQLearning::setOutput(bool option){
 		output = option;
 	}
 
-	void ReAP1::setInitialPhase(int ph){
+	void AppQLearning::setInitialPhase(int ph){
 		idxCurrentPh = initialPhase = ph;
 	}
 	
-	void  ReAP1::setSaturationFlow(int phi, float satFlow) {
+	void  AppQLearning::setSaturationFlow(int phi, float satFlow) {
 		satFlows[phi] = satFlow;
 	}
 
-	void  ReAP1::setLanePhases(int phi, int lanes) {
+	void  AppQLearning::setLanePhases(int phi, int lanes) {
 		lanePhases[phi] = lanes;
 	}
 	
-	void ReAP1::setStartupLostTime(float time){
+	void AppQLearning::setStartupLostTime(float time){
 		startupLostTime = time;
 	}
 		
-	void ReAP1::setMinGreenTime(int mgreen){
+	void AppQLearning::setMinGreenTime(int mgreen){
 		mingreen = mgreen;
 	}
 	
-	void ReAP1::setMaxGreenTime(int mxgreen){
+	void AppQLearning::setMaxGreenTime(int mxgreen){
 		maxgreen = mxgreen;
 	}
 
-	void ReAP1::setRedTime(int rd){
+	void AppQLearning::setRedTime(int rd){
 		red= rd;
 	}
 
-	void ReAP1::setHorizon(int h){
+	void AppQLearning::setHorizon(int h){
 		T= h;
 		resizeArrivals();
 	}
 	
-	void ReAP1::setMaxPhCompute(int mp){
+	void AppQLearning::setMaxPhCompute(int mp){
 		M= mp;
 	}
 
-	void ReAP1::setArrivals(std::vector<std::vector<int> > arrivals){
+	void AppQLearning::setArrivals(std::vector<std::vector<int> > arrivals){
 		arrivalData = arrivals;
 	};
 
-	int ReAP1::getArrivals(int a, int b, int phi) {
+	int AppQLearning::getArrivals(int a, int b, int phi) {
 
 		if (a == b)
 			return 0;
@@ -92,7 +96,7 @@ namespace REAP1{
 		return vehicles;
 	}
 		
-	float  ReAP1::getSaturationFlow(int phi) { // sat-flow rate per phase, not per lane. in vehicles per sec
+	float  AppQLearning::getSaturationFlow(int phi) { // sat-flow rate per phase, not per lane. in vehicles per sec
 		// NOTE: Simplicity assumption return 0;
 		float sf = satFlows[phi];
 		if (sf <0) return 0;
@@ -100,15 +104,15 @@ namespace REAP1{
 		return (satFlows[phi]/3600)*lanePhases[phi]; // in vphpl, to vpspl
 	}
 
-	std::vector<int> ReAP1::getOptimalControl(){
+	std::vector<int> AppQLearning::getOptimalControl(){
 		return optControlSequence;
 	}; 
 
-	int ReAP1::getInitialPhase(){
+	int AppQLearning::getInitialPhase(){
 		return initialPhase;
 	}
 
-	int ReAP1::getRed(){
+	int AppQLearning::getRed(){
 		return red;
 	}
 
@@ -116,7 +120,7 @@ namespace REAP1{
  * initialisation
  * --------------------------------------------------------------------- */
 
-	void ReAP1::initParameters(){
+	void AppQLearning::initParameters(){
 		PI = DELAY;
 		red = 1; //1
 		mingreen = 2; //2
@@ -131,7 +135,7 @@ namespace REAP1{
 		resizeArrivals();
 	}
 
-	void ReAP1::resizeArrivals()
+	void AppQLearning::resizeArrivals()
 	{
 		arrivalData.resize(T);
 		for (unsigned int i = 0; i < T; ++i) {
@@ -139,7 +143,7 @@ namespace REAP1{
 		}
 	}
 
-	void  ReAP1::initMatrices(int init) {
+	void  AppQLearning::initMatrices(int init) {
 			for (unsigned int i = 0; i < v.size(); ++i) {
 				for (unsigned int j = 0; j < v[i].size(); ++j) {
 					if (i == 0) {
@@ -156,14 +160,14 @@ namespace REAP1{
  * constructors
  * --------------------------------------------------------------------- */
 
-	ReAP1::ReAP1(char* file, int iphase){
+	AppQLearning::AppQLearning(char* file, int iphase){
 		initParameters();
 		if(!loadFromFile(file))
 			exit(0);
 		idxCurrentPh = initialPhase = iphase;
 	};
 
-	ReAP1::ReAP1(char* file, int iphase, int horizon){
+	AppQLearning::AppQLearning(char* file, int iphase, int horizon){
 		initParameters();
 		setHorizon(horizon);
 		if(!loadFromFile(file))
@@ -171,28 +175,28 @@ namespace REAP1{
 		idxCurrentPh = initialPhase = iphase;
 	};
 
-	ReAP1::ReAP1(char* data, int size, int nphases, int iphase){
+	AppQLearning::AppQLearning(char* data, int size, int nphases, int iphase){
 		initParameters();
 		if(!loadFromSeq(data, size, nphases))
 			exit(0);
 		idxCurrentPh = initialPhase = iphase;
 	};
 
-	ReAP1::ReAP1(std::vector<int> data, int nphases, int iphase){
+	AppQLearning::AppQLearning(std::vector<int> data, int nphases, int iphase){
 		initParameters();
 		if(!loadFromVector(data, nphases))
 			exit(0);
 		idxCurrentPh = initialPhase = iphase;
 	};
 
-	ReAP1::ReAP1(std::vector<std::vector<int> > data, int iphase, int horizon){
+	AppQLearning::AppQLearning(std::vector<std::vector<int> > data, int iphase, int horizon){
 		initParameters();
 		setHorizon(horizon);
 		arrivalData = data;
 		idxCurrentPh = initialPhase = iphase;
 	};
 
-	ReAP1::ReAP1(int iphase, int horizon){
+	AppQLearning::AppQLearning(int iphase, int horizon){
 		initParameters();
 		setInitialPhase(iphase);
 		setHorizon(horizon);
@@ -200,7 +204,7 @@ namespace REAP1{
 	
 	};
 
-	ReAP1::ReAP1(){
+	AppQLearning::AppQLearning(){
 
 		initPolicy();
     	action = 0;		
@@ -221,7 +225,7 @@ namespace REAP1{
  * in/out
  * --------------------------------------------------------------------- */
 		
-	bool  ReAP1::loadFromFile(char* filename) {
+	bool  AppQLearning::loadFromFile(char* filename) {
 		unsigned int x, y;
 		ifstream in(filename);
 
@@ -241,7 +245,7 @@ namespace REAP1{
 		return true;
 	};
 
-	bool ReAP1::loadFromSeq(char* data, unsigned int size, int nPhases) {
+	bool AppQLearning::loadFromSeq(char* data, unsigned int size, int nPhases) {
 		
 		//ifstream in(filename);
 		int ic = 0;
@@ -262,7 +266,7 @@ namespace REAP1{
 		return true;
 	}
 
-	bool ReAP1::loadFromVector(std::vector<int> data, int nPhases) {
+	bool AppQLearning::loadFromVector(std::vector<int> data, int nPhases) {
 		
 		for (unsigned int ix = 0; ix < data.size(); ++ix)
 		{
@@ -271,7 +275,7 @@ namespace REAP1{
 		return true;
 	}
 
-	void  ReAP1::printArrivals() {
+	void  AppQLearning::printArrivals() {
 		cout << "\n\n"; 
 		for (unsigned int p=0; p < phases.size(); ++p)
 		{
@@ -288,7 +292,7 @@ namespace REAP1{
 		cout << endl;
 	}
 
-	void  ReAP1::printVector(vector<int> values) {
+	void  AppQLearning::printVector(vector<int> values) {
 
 		cout << flush << "[  ";
 		for (vector<int>::iterator i = values.begin(); i != values.end(); ++i) {
@@ -304,7 +308,7 @@ namespace REAP1{
 		cout << "  ]";
 	}
 
-	void  ReAP1::printMatrix(vector<vector<int> > values) {
+	void  AppQLearning::printMatrix(vector<vector<int> > values) {
 
 		for (unsigned int i = 0; i < values.size(); ++i) {
 			printVector(values[i]);
@@ -312,7 +316,7 @@ namespace REAP1{
 		}
 	}
 
-	vector<int>  ReAP1::printSequence(int arry[], int sz) {
+	vector<int>  AppQLearning::printSequence(int arry[], int sz) {
 
 		vector<int> seq;
 		cout << "[ ";
@@ -329,61 +333,61 @@ namespace REAP1{
  * learning 
  * --------------------------------------------------------------------- */
 	
-	void ReAP1::setInitialState(REAP1::ReAP1Policy::REAP1STATE st)
+	void AppQLearning::setInitialState(APPQL::AppQLearningPolicy::AppQLearningSTATE st)
 	{
 		state = st;
 	}
 
-	void ReAP1::setAlpha(double a){
+	void AppQLearning::setAlpha(double a){
 		if (a >=0 && a< 1)
 			alpha = a;
 	}
 
-	double ReAP1::getAlpha(){
+	double AppQLearning::getAlpha(){
 		return alpha;
 	}
 
-	void ReAP1::setGamma(double g){
+	void AppQLearning::setGamma(double g){
 		if (g >=0 && g< 1)
 			gamma = g;
 	}
 
-	double ReAP1::getGamma(){
+	double AppQLearning::getGamma(){
 		return gamma;
 	}
 
-	void ReAP1::setEpsilon(double e){
+	void AppQLearning::setEpsilon(double e){
 		if (e >=0 && e < 1)
 			epsilon = e;
 	}
 
-	double ReAP1::getEpsilon(){
+	double AppQLearning::getEpsilon(){
 		return epsilon;
 	}
 	
-	REAP1::ReAP1Policy ReAP1::getPolicy(){
+	APPQL::AppQLearningPolicy AppQLearning::getPolicy(){
 		return policy;
 	}
 	
-	bool ReAP1::getRandomFlag(){
+	bool AppQLearning::getRandomFlag(){
 		return random;
 	}
 
-	bool ReAP1::validAction(int action){
+	bool AppQLearning::validAction(int action){
 		if (action >= 0 && action <3)	//TODO: improve
 			return true;
 		else
 			return false;
 	}
 	
-	void ReAP1::initPolicy(){
-		policy = REAP1::ReAP1Policy();
+	void AppQLearning::initPolicy(){
+		policy = APPQL::AppQLearningPolicy();
 	}
 
 	//5
 	/*	 update state and select action	based on e-greedy	*/
 	/*	 invoked by the controller	*/
-	int ReAP1::selectAction(REAP1::ReAP1Policy::REAP1STATE iState){		
+	int AppQLearning::selectAction(APPQL::AppQLearningPolicy::AppQLearningSTATE iState){		
 		std::vector<double> qVals = policy.getQvalues(iState);		//TODO: check for vector iterator incompatibility
 		int sAction = -1;
 
@@ -451,27 +455,27 @@ namespace REAP1{
 	//6.1
 	/*	after applying action, update state in the agent	*/
 	/*	 invoked by the controller	*/
-	void ReAP1::setNewState(REAP1::ReAP1Policy::REAP1STATE iState){
+	void AppQLearning::setNewState(APPQL::AppQLearningPolicy::AppQLearningSTATE iState){
 		newState = iState;
 	}
 
 	//6.2
 	/*	after applying action, update state in the agent	*/
 	/*	 invoked by the controller	*/
-	void ReAP1::setNewReward(double oReward){
+	void AppQLearning::setNewReward(double oReward){
 		reward = oReward;
 	}
 
 	//6
 	/*	after applying action, update state in the agent	*/
 	/*	 invoked by the controller	*/
-	void ReAP1::setNewStateReward(REAP1::ReAP1Policy::REAP1STATE iState, double oReward){
+	void AppQLearning::setNewStateReward(APPQL::AppQLearningPolicy::AppQLearningSTATE iState, double oReward){
 		newState = iState;
 		reward = oReward;
 	}
 
 	//7
-	void ReAP1::updateQ(){
+	void AppQLearning::updateQ(){
 		
 		double tQ;		// Q-learning
 		double maxQ;
@@ -485,18 +489,29 @@ namespace REAP1{
 		maxQ = policy.getMaxQvalue(newState);
 		// update rule for the Q-function, based on Bellman
 		nQ = tQ + alpha * (reward + gamma * maxQ - tQ);		/*	compute new Q */
-		policy.setQvalue(state, action, nQ);		/* update Q-table*/
+		
+		/**
+		 * NEW! compute and set ApproxParameters()
+		 */
+		 for (int param = 0; param < policy.nParameters; ++param)
+		 {
+		 	// TODO: implement partial derivative?
+		 	newParam = oldParam + alpha*(reward + gamma*maxQ - tQ)*partialD(tQ, oldParam);
+		 	policy.setApproxParam(action, param, newValue);	
+		 }
+
+		policy.setQvalue(state, action, nQ);		/* 	update Q-table 	*/
 
 	}
 
 	//8
 	/*	update state in agent*/
 	/*	 invoked by the controller	*/
-	void ReAP1::updateState(){
+	void AppQLearning::updateState(){
 		state = newState;
 	}
 	
-	vector<int> ReAP1::RunREAP() {
+	vector<int> AppQLearning::Run() {
 
 		std::vector<int> optControlSequence;
 
@@ -506,13 +521,13 @@ namespace REAP1{
 		optControlSequence.push_back(55);
 		optControlSequence.push_back(55);
 
-		cout << "REAP started...\n";
+		cout << "Q-Learner started...\n";
 		//selectNextAction();
 		//updateState(NULL);
 		//updateReward();
 
 		cout << "\nOptimal Control Sequence: \n\n";
-		cout << "\n\n...REAP ended\n\n";
+		cout << "\n\n...Q-Learner ended\n\n";
 		return optControlSequence;
 
 	}; 

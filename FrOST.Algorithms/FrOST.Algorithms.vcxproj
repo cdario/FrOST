@@ -83,14 +83,22 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AppQLearning.h" />
+    <ClInclude Include="AppQLearningPolicy.h" />
     <ClInclude Include="COP97A.h" />
     <ClInclude Include="REAP1.h" />
     <ClInclude Include="REAP1Policy.h" />
+    <ClInclude Include="TabQLearning.h" />
+    <ClInclude Include="TabQLearningPolicy.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AppQLearning.cpp" />
+    <ClCompile Include="AppQLearningPolicy.cpp" />
     <ClCompile Include="COP97A.cpp" />
     <ClCompile Include="REAP1.cpp" />
     <ClCompile Include="REAP1Policy.cpp" />
+    <ClCompile Include="TabQLearning.cpp" />
+    <ClCompile Include="TabQLearningPolicy.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

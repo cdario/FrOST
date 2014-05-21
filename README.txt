@@ -14,7 +14,8 @@ Features:
 
 	1. Implementation of C.O.P algorithm
 	2. Extension plugin for simulation in QP
-	2. Some examples for future use of QP API
+	3. Some examples for future use of QP API
+	4. Integration with JADE
 
 Use:
 

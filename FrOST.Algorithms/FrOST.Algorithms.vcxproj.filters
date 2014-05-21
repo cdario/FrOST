@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\Policies">
+      <UniqueIdentifier>{66296768-ce89-4756-8f20-c8292ee69013}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Policies">
+      <UniqueIdentifier>{a4d514f8-28d2-43ee-aa66-9e96b6bb9d1c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
@@ -24,8 +30,20 @@
     <ClInclude Include="REAP1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="REAP1Policy.h">
+    <ClInclude Include="TabQLearning.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AppQLearning.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AppQLearningPolicy.h">
+      <Filter>Header Files\Policies</Filter>
+    </ClInclude>
+    <ClInclude Include="REAP1Policy.h">
+      <Filter>Header Files\Policies</Filter>
+    </ClInclude>
+    <ClInclude Include="TabQLearningPolicy.h">
+      <Filter>Header Files\Policies</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -35,8 +53,20 @@
     <ClCompile Include="REAP1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="REAP1Policy.cpp">
+    <ClCompile Include="TabQLearning.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AppQLearning.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="REAP1Policy.cpp">
+      <Filter>Source Files\Policies</Filter>
+    </ClCompile>
+    <ClCompile Include="TabQLearningPolicy.cpp">
+      <Filter>Source Files\Policies</Filter>
+    </ClCompile>
+    <ClCompile Include="AppQLearningPolicy.cpp">
+      <Filter>Source Files\Policies</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

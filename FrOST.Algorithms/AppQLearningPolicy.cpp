@@ -1,23 +1,13 @@
-//************************************************
-
-// This is the main DLL file.
-//#include "stdafx.h"
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <sstream>
-#include "REAP1Policy.h"
+#include "AppQLearningPolicy.h"
 #include <algorithm>
 #include <iomanip>
 #include <random>
 #include <float.h>
 
-/*
-MS bug and workaround: use std::vector  http://support.microsoft.com/kb/243444
-MUST include <vector>
-*/
-
-// Compile Options:  /GX
 namespace std {
 	#include <cstdlib>
 };
@@ -25,9 +15,9 @@ namespace std {
 
 using namespace std;
 
-namespace REAP1{
+namespace APPQL{
 
-	ReAP1Policy::ReAP1Policy(){
+	AppQLearningPolicy::AppQLearningPolicy(){
 		
 		//initQValues(0.0000000000000000001 * rand());	//TODO: remove
 		std::vector<int> queueSt;
@@ -35,36 +25,54 @@ namespace REAP1{
 		tState = getStateInstance(queueSt, 0, 0);	// TODO: improve initial state
 		nStates = Q.size();
 		nActions = 3;
+		
+		nFeatures = 5;	// 3 max queue lengths + phase index + green remaining
+		approxFeatures = new std::vector(nFeatures; 0.0);	
+		approxParameters.resize(nActions);
+		for (int ip=0; ip < approxParameters.size(); ip++)
+		{
+			approxParameters(ip).resize(nFeatures);
+		}
 	}
 
 /* ---------------------------------------------------------------------
 * learning & logic
 * --------------------------------------------------------------------- */
 	
-	ReAP1Policy::REAP1STATE ReAP1Policy::getStateInstance(std::vector<int> pQueues, int iPhase, int rGreen)
+	AppQLearningPolicy::AppQLearningSTATE AppQLearningPolicy::getStateInstance(std::vector<int> pQueues, int iPhase, int rGreen)
 	{
-		ReAP1Policy::REAP1STATE state;
+		AppQLearningPolicy::AppQLearningSTATE state;
 		state.queueLengths.swap(pQueues);	// TODO: test this swap
 		state.phaseIndex = iPhase;
 		state.greenRemaining = rGreen;
 		return state;
 	}
 	
-	ReAP1Policy::REAP1STATE ReAP1Policy::setState(ReAP1Policy::REAP1STATE state)
+	AppQLearningPolicy::AppQLearningSTATE AppQLearningPolicy::setState(AppQLearningPolicy::AppQLearningSTATE state)
 	{
 		tState = state;
 		return tState;
 	}
 	// TODO: make this function faster, slows down DLL load
-	void ReAP1Policy::initQValues(double iValue){
+	void AppQLearningPolicy::initQValues(double iValue){
 		
 		return; //TODO: remove
+
+/**
+ * 		queue per phase 	phase 		elapsed green (x5)
+ * 		10^3 {10*10*10} * 3 {1-3} * 11 {5-55}					= 33000 states
+ *
+ *		approach state
+ * 		16 {4-4} * 3 {1-3} * 11 {5-55}					= 528 states
+ * 		
+ */
+
 		// TODO: try without initialisating- When updating set rnd value and add key-value pair
 		for (int cph=0; cph<3; cph++)	/*	build all possible state representations	*/
 		{
-			for (int gr=0; gr<=50; gr++)
+			for (int gr=0; gr<=55; gr++)
 			{
-				for (int qu0=0; qu0<=10; qu0++)		/*----------	queue lengths combinations per phase */
+				for (int qu0=0; qu0<=10; qu0++)		/*	queue lengths combinations per phase */
 				{
 					for (int qu1=0; qu1<=10; qu1++)
 					{
@@ -73,16 +81,16 @@ namespace REAP1{
 							std::vector<int> queueSt;
 							//std::vector<int> queueSt;
 							queueSt.push_back(qu0);queueSt.push_back(qu1);queueSt.push_back(qu2);
-							ReAP1Policy::REAP1STATE nstate;
+							AppQLearningPolicy::AppQLearningSTATE nstate;
 							nstate.queueLengths.swap(queueSt);	// TODO: test this swap
 							nstate.phaseIndex = cph;
 							nstate.greenRemaining = gr;
 
-							//REAP1STATE nState = getStateInstance(queueSt, gr, cph);
+							//AppQLearningSTATE nState = getStateInstance(queueSt, gr, cph);
 																					
 							//std::vector<double> qValues;	/*	add to Q values	; number of actions = 3 */
 							//qValues.push_back(iValue);qValues.push_back(iValue);qValues.push_back(iValue);
-							REAP1QVALUES qValues;
+							AppQLearningValues qValues;
 							qValues.qValue1 = iValue;
 							qValues.qValue2 = iValue;
 							qValues.qValue3 = iValue;
@@ -98,24 +106,18 @@ namespace REAP1{
 		//tState = getNextState(getStateInstance(queueSt, 0, 0));
 	}
 
-	std::vector< double> ReAP1Policy::getQvalues(REAP1STATE state){
+	std::vector< double> AppQLearningPolicy::getQvalues(AppQLearningSTATE state){
 		std::vector< double> newQ;
-		//newQ.push_back(Q[state].qValue3);
-		//newQ.push_back(Q[state].qValue2);
-		//newQ.push_back(Q[state].qValue1);
 
-		newQ.push_back(0.0);
-		newQ.push_back(0.0);
-		newQ.push_back(0.0);	//TODO: remove
+		for(unsigned action = 0; action < nActions; ac++)
+		{
+			newQ.push_back(getQvalue(state, action));
+		}
 
-
-
-		//newQ.reserve(Q[state].size());
-		//newQ.swap (Q[state]);
-		return ( newQ );		//TODO: verify passing by value
+		return newQ;
 	}
 
-	int ReAP1Policy::printQs(){
+	int AppQLearningPolicy::printQs(){
 	
 		//std::string fname = "Qvalues.txt";
 
@@ -128,9 +130,8 @@ namespace REAP1{
 		//	FILE *fp = fopen(fname.c_str(), "w");
 		//	if (!fp)
 		//		return -errno;
-  //   
-
-		//	typedef std::map<REAP1STATE, REAP1QVALUES>::iterator reapIT;
+  		
+		//	typedef std::map<AppQLearningSTATE, AppQLearningValues>::iterator reapIT;
 
 		//	for (int i=0; i < Q.size(); i++)
 		//	{
@@ -145,13 +146,13 @@ namespace REAP1{
 		//		// Repeat if you also want to iterate through the second map.
 		//	}
 
-		//	for(std::map<REAP1STATE, REAP1QVALUES>::iterator it = Q.begin(); it != Q.end(); it++) {
+		//	for(std::map<AppQLearningSTATE, AppQLearningValues>::iterator it = Q.begin(); it != Q.end(); it++) {
 		//		
 		//		it
 		//		fprintf(fp, "%s=%s\n", it->first.c_str(), it->second.c_str());
 		//		count++;
 		//	}
-  //   
+  		//   
 		//	fclose(fp);
 		//	return count;
 		//}
@@ -159,8 +160,36 @@ namespace REAP1{
 		return 0;
 	}
 
-	void ReAP1Policy::setQvalue(REAP1STATE state, int action, double newQ){
-		return; // TODO: remove
+	void AppQLearningPolicy::setQvalue(AppQLearningSTATE state, int action, double newQ){
+		
+		// TODO: UPDATE THETAS for Q-APPROXIMATORS
+		/**
+		 * 		Update approximator parameters theta
+		 * 		Update approximator feature based on state
+		 */
+		
+		for (int i = 0; i < nFeatures; ++i)
+		{
+
+			approxParameters[action][i] += alpha()
+
+			approxParameters[action][0] = 
+			approxParameters[action][1]
+			approxParameters[action][2]
+			approxParameters[action][3]
+			approxParameters[action][4]
+		}
+
+		approxFeatures[0] = state.queueLengths[0];
+		approxFeatures[1] = state.queueLengths[1];
+		approxFeatures[2] = state.queueLengths[2];
+		approxFeatures[3] = state.phaseIndex;
+		approxFeatures[4] = state.greenRemaining;
+
+
+
+
+
 		switch (action)
 		{
 			case 0: Q[state].qValue1 = newQ;	// TODO: Set a distinct Q-value based on each action...
@@ -170,23 +199,36 @@ namespace REAP1{
 			case 2: Q[state].qValue3 = newQ;
 						break;
 		}
-		//Q[state][action] = newQ;
+		
 	}
 
-	double ReAP1Policy::getQvalue(REAP1STATE state, int action){
-		//return Q[state][action];
-		return 0.0;	//TODO: quick fix
+	/**
+	 * Updated to FUNCTION APPROXIMATION Q(s,a) = SUM( theta(a,n)*f(n) ) based on Q-APPROX from current Thetas
+	 * @param  state
+	 * @param  action
+	 * @return	Q-value
+	 */
+	double AppQLearningPolicy::getQvalue(AppQLearningSTATE state, int action){
 
-		switch (action)
+		double q_value = 0;
+
+		for (int n=0; n <= NUM_FEATURES; n++)
 		{
-			case 0: return Q[state].qValue1; break;
-			case 1: return Q[state].qValue2; break;
-			case 2: return Q[state].qValue3; break;
-			default: return 0.0; break;
+			q_value += approxParameters[action][n] * approxFeatures[n];
 		}
+
+		return q_value;	
+
+		// switch (action)
+		// {
+		// 	case 0: return Q[state].qValue1; break;
+		// 	case 1: return Q[state].qValue2; break;
+		// 	case 2: return Q[state].qValue3; break;
+		// 	default: return 0.0; break;
+		// }
 	}
 
-	double ReAP1Policy::getMaxQvalue(REAP1STATE state){
+	double AppQLearningPolicy::getMaxQvalue(AppQLearningSTATE state){
 		
 		return 0.001;//TODO: remove
 		double maxQ = -DBL_MAX;
