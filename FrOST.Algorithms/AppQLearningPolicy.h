@@ -10,7 +10,6 @@
 // Compile Options:  /GX
 namespace std {
 #include <cstdlib>
-
 };	
 #include <vector>
 #include <string>
@@ -24,8 +23,8 @@ namespace std {
 
 namespace APPQL {
 
-	class AppQLearningPolicy
-	{
+	class AppQLearningPolicy{
+
 	public: 
 		APPQLPOLICY_API AppQLearningPolicy();
 
@@ -40,9 +39,9 @@ namespace APPQL {
 			int greenRemaining;
 		};
 
-		struct AppQLearningQVALUES_s
+		struct AppQLearningQVALUES_s			/*		per action 		*/
 		{	
-			double qValue1;					/*		per action 		*/
+			double qValue1;					
 			double qValue2;
 			double qValue3;
 		};
@@ -62,7 +61,7 @@ namespace APPQL {
 		* Reward definition
 		* --------------------------------------------------------------------- */
 
-		int AppQLearningPolicy::reward;
+		int AppQLearningPolicy::reward;		// savings in delay
 
 		/* ---------------------------------------------------------------------
 		* Q structures
@@ -88,21 +87,21 @@ namespace APPQL {
 									else
 										//queue0 equals
 										if (a.queueLengths[1] < b.queueLengths[1]) return true;
+									else
+									{
+										if (a.queueLengths[1] > b.queueLengths[1]) return false;
 										else
 										{
-											if (a.queueLengths[1] > b.queueLengths[1]) return false;
+												//queue1 equals
+											if (a.queueLengths[2] < b.queueLengths[2]) return true;
 											else
 											{
-												//queue1 equals
-												if (a.queueLengths[2] < b.queueLengths[2]) return true;
-												else
-												{
-													if (a.queueLengths[2] > b.queueLengths[2]) return false;
+												if (a.queueLengths[2] > b.queueLengths[2]) return false;
 													//else
 														//return true;	
-												}
 											}
 										}
+									}
 								}
 							}
 						}
@@ -115,56 +114,48 @@ namespace APPQL {
 //		typedef std::map<REAP1STATE,std::vector< double>, comparatorState> Qtable;
 //		Qtable Q;
 		std::map<AppQLearningSTATE,AppQLearningValues, stateCompare> Q;
-
 		//std::map <REAP1STATE, std::vector< double>, comparatorState> Q;
 		APPQLPOLICY_API void initQValues(double iValue);	/*	1	*/
-		APPQLPOLICY_API AppQLearningSTATE setState(AppQLearningSTATE state);		/*	2	*/
 		APPQLPOLICY_API std::vector< double> getQvalues(AppQLearningSTATE state);
-		APPQLPOLICY_API void setQvalue(AppQLearningSTATE state, int action, double newQ);
 		APPQLPOLICY_API double getQvalue(AppQLearningSTATE state, int action);
 		APPQLPOLICY_API double getMaxQvalue(AppQLearningSTATE state);
 		APPQLPOLICY_API AppQLearningPolicy::AppQLearningSTATE getStateInstance(std::vector<int> pQueues, int iPhase, int rGreen);
 		
 
 		///* ---------------------------------------------------------------------
-		//* Function Approximators
+		//* Function Approximation
 		//* --------------------------------------------------------------------- */
-
-		// Q(s,a) = SUM(theta(a,n)*f(n))
 
 		/**
 		 * features to model: 
 		 *
-		 * approach_state = 		1 to 16
+		 * max_queue_lengths =		10*3 			* approach_state = 		1 to 16
 		 * active_phase_index = 	3
 		 * elapsed_green =			11
-		 * 
 		 */
+
+		/**
+		 * f vector of features representing state
+		 */
+
+		
+		int nFeatures;
+
+
+
 		std::vector<double> approxFeatures;	// f_n
 
 		/**
-		 *  theta vector to be learned, (approximator)
+		 *  theta(k,a) to be learned, (approximator)
 		 */
-		std::vector< std::vector<int> > approxParameters;	// theta^a_n
+		std::vector< std::vector<double> > approxParameters;	// theta^a_n
 
+		double AppQLearningPolicy::getApproxFeature(int feature);
+		double AppQLearningPolicy::getApproxParameter(int action, int feature);	
 
-
-		//learning Q(s,a) function for action 0
-		// int action = 0;
-		// double q_value = 0;
-
-		// for (int n=0; n <= NUM_FEATURES; n++)
-		// {
-		// 	q_value += approx_parameters[action][n] * approx_features[n];
-		// }	
-
-
-
-		//private:
-
-		///* ---------------------------------------------------------------------
-		//* State variables
-		//* --------------------------------------------------------------------- */
+		APPQLPOLICY_API void updateApproxFeatures(AppQLearningSTATE state);		/*	2	*/	//NEW
+		APPQLPOLICY_API void AppQLearningPolicy::setApproxParam(int action, int kParam, double newParamValue);	//NEW
+		APPQLPOLICY_API void AppQLearningPolicy::setApproxFeature(int kParam, double newFeatureValue);	//NEW
 
 	};
 }

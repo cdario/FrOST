@@ -19,7 +19,8 @@ extern "C" {
 #include "programmer.h"
 }
 
-#include "REAP1.h"
+#include "AppQLearning.h"
+//#include "REAP1.h"
 #include "JunctionCore.h"
 
 using namespace std;
@@ -63,7 +64,8 @@ namespace CORE{
 	float timeToNext = 0;
 
 	/*controller*/
-	REAP1::ReAP1 agentController;
+	//REAP1::ReAP1 agentController;
+	APPQL::AppQLearning agentController;
 	vector<int> control;
 	vector<CONTROLDATA> controlSeq;
 	vector<CONTROLDATA> tempSeq;
@@ -86,7 +88,9 @@ namespace CORE{
 	int currentControl = 0;
 	int seqIndex = 0;
 
-	REAP1::ReAP1Policy::REAP1STATE xState;
+	//REAP1::ReAP1Policy::REAP1STATE xState;
+	APPQL::AppQLearningPolicy::AppQLearningSTATE xState;
+
 	bool actionTaken = false;
 	int action = -1;
 
@@ -657,10 +661,10 @@ namespace CORE{
 			}
 		}
 
-		//qps_GUI_printf(">>> stopline arrivals: A[%i] B[%i] C[%i]", stoplineArrivals[0], stoplineArrivals[1], stoplineArrivals[2]); 
-		//qps_GUI_printf(">>> stopline count   : A[%i] B[%i] C[%i]", stopLineDepartures[0], stopLineDepartures[1], stopLineDepartures[2]); 
+		qps_GUI_printf(">>> stopline arrivals: A[%i] B[%i] C[%i]", stoplineArrivals[0], stoplineArrivals[1], stoplineArrivals[2]); 
+		qps_GUI_printf(">>> stopline departur: A[%i] B[%i] C[%i]", stopLineDepartures[0], stopLineDepartures[1], stopLineDepartures[2]); 
 
-		//qps_GUI_printf(">> Current queues : A[%i] B[%i] C[%i]", eQueueCount[0], eQueueCount[1], eQueueCount[2]); 
+		qps_GUI_printf(">> Current queues : A[%i] B[%i] C[%i]", eQueueCount[0], eQueueCount[1], eQueueCount[2]); 
 
 		/*
 		the difference between the number of expected arrival vehicles and the actually departed vehicles at the stop line

@@ -75,14 +75,16 @@ namespace APPQL {
 	
 		APPQL_API APPQL::AppQLearningPolicy getPolicy();
 		APPQL_API bool getRandomFlag();
-		APPQL_API void setAlpha(double a);
-		APPQL_API double getAlpha();
-		APPQL_API void setGamma(double g);
-		APPQL_API double getGamma();
-		APPQL_API void setEpsilon(double e);
-		APPQL_API double getEpsilon();
+		APPQL_API void setLearningRate(double a);
+		APPQL_API double getLearningRate();
+		APPQL_API void setRewardDiscountFactor(double g);
+		APPQL_API double getRewardDiscountFactor();
+		APPQL_API void setgreedyEpsilon(double e);
+		APPQL_API double getgreedyEpsilon();
 		APPQL_API void initPolicy();
 		APPQL_API bool validAction(int action);		/* check whether action is permitted */
+
+		APPQL_API double getPartialQ (int action, int parIndex);
 		
 		/*	Invoked by thread in the controller	*/
 		APPQL_API int selectAction(APPQL::AppQLearningPolicy::AppQLearningSTATE iState);
@@ -125,11 +127,11 @@ namespace APPQL {
 		* RL
 		* --------------------------------------------------------------------- */
 		
-		double epsilon;		/*	for epsilon-greedy	*/
+		double greedyEpsilon;		/*	 e-greedy	*/
 	    double temp;
 
-		double alpha;		/*	learning rate	*/
-		double gamma;		/*	discount factor	*/
+		double learningRate;		/*	alpha */
+		double rewardDiscountFactor;		/*	gamma	*/
 		double lambda;
 
 		APPQL::AppQLearningPolicy::AppQLearningSTATE state;

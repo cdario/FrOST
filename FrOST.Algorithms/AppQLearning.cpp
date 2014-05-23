@@ -209,11 +209,11 @@ namespace APPQL{
 		initPolicy();
     	action = 0;		
 		// set default values
-		epsilon = 0.1;
+		greedyEpsilon = 0.1;
 		temp = 1;
 
-		alpha = 1; 
-		gamma = 0.1;
+		learningRate = 1; 
+		rewardDiscountFactor = 0.1;
 		lambda = 0.1;  
 
 		random = false;
@@ -338,31 +338,31 @@ namespace APPQL{
 		state = st;
 	}
 
-	void AppQLearning::setAlpha(double a){
+	void AppQLearning::setLearningRate(double a){
 		if (a >=0 && a< 1)
-			alpha = a;
+			learningRate = a;
 	}
 
-	double AppQLearning::getAlpha(){
-		return alpha;
+	double AppQLearning::getLearningRate(){
+		return learningRate;
 	}
 
-	void AppQLearning::setGamma(double g){
+	void AppQLearning::setRewardDiscountFactor(double g){
 		if (g >=0 && g< 1)
-			gamma = g;
+			rewardDiscountFactor = g;
 	}
 
-	double AppQLearning::getGamma(){
-		return gamma;
+	double AppQLearning::getRewardDiscountFactor(){
+		return rewardDiscountFactor;
 	}
 
-	void AppQLearning::setEpsilon(double e){
+	void AppQLearning::setgreedyEpsilon(double e){
 		if (e >=0 && e < 1)
-			epsilon = e;
+			greedyEpsilon = e;
 	}
 
-	double AppQLearning::getEpsilon(){
-		return epsilon;
+	double AppQLearning::getgreedyEpsilon(){
+		return greedyEpsilon;
 	}
 	
 	APPQL::AppQLearningPolicy AppQLearning::getPolicy(){
@@ -407,7 +407,7 @@ namespace APPQL{
 
 		double udr = realDist(eng);
 
-		if(udr < epsilon)		/*	exploring	*/
+		if(udr < greedyEpsilon)		/*	exploring	*/
 		{	
 			sAction = -1;			// TODO: check use
 			random = true;
@@ -475,33 +475,21 @@ namespace APPQL{
 	}
 
 	//7
-	void AppQLearning::updateQ(){
+	void AppQLearning::updateQ(){	//for approximator i.e. updateTheta
 		
-		double tQ;		// Q-learning
+		double currentQ;		// Q-learning
 		double maxQ;
-		double nQ;
+		double newParamValue;
 
-		//action = selectAction(state);
-		//newState = Controller.getNextState(action);
-		//reward = Controller.getReward();
-
-		tQ = policy.getQvalue(state, action);
+		currentQ = policy.getQvalue(state, action);
 		maxQ = policy.getMaxQvalue(newState);
-		// update rule for the Q-function, based on Bellman
-		nQ = tQ + alpha * (reward + gamma * maxQ - tQ);		/*	compute new Q */
-		
-		/**
-		 * NEW! compute and set ApproxParameters()
-		 */
-		 for (int param = 0; param < policy.nParameters; ++param)
+
+		 for (int kParam = 0; kParam < policy.nFeatures; ++kParam)
 		 {
-		 	// TODO: implement partial derivative?
-		 	newParam = oldParam + alpha*(reward + gamma*maxQ - tQ)*partialD(tQ, oldParam);
-		 	policy.setApproxParam(action, param, newValue);	
+		 	newParamValue = policy.getApproxParameter(action, kParam) 
+		 				+ learningRate*(reward + rewardDiscountFactor*maxQ - currentQ)*getPartialQ(action, kParam);
+		 	policy.setApproxParam(action, kParam, newParamValue); /* 	update all approx parameters theta for current action */
 		 }
-
-		policy.setQvalue(state, action, nQ);		/* 	update Q-table 	*/
-
 	}
 
 	//8
@@ -509,6 +497,7 @@ namespace APPQL{
 	/*	 invoked by the controller	*/
 	void AppQLearning::updateState(){
 		state = newState;
+		policy.updateApproxFeatures(state);	// TODO: is it called in the right order?
 	}
 	
 	vector<int> AppQLearning::Run() {
@@ -531,4 +520,11 @@ namespace APPQL{
 		return optControlSequence;
 
 	}; 
+
+	double AppQLearning::getPartialQ (int action, int parIndex){
+		
+		//linear function: 1st order partial derivate = feature value (coeficient)
+		return policy.getApproxFeature(parIndex);
+	}
+
 }

@@ -25,7 +25,8 @@ extern "C" {
 #include "programmer.h"
 }
 
-#include "REAP1.h"
+#include "AppQLearning.h"
+//#include "REAP1.h"
 
 using namespace std;
 
@@ -97,7 +98,8 @@ namespace CORE{
 		float timeToNext;
 
 		/*controller*/
-		REAP1::ReAP1 agentController;
+		//REAP1::ReAP1 agentController;
+		APPQL::AppQLearning agentController;
 		vector<int> control;
 		vector<CONTROLDATA> controlSeq;
 		vector<CONTROLDATA> tempSeq;
@@ -122,7 +124,8 @@ namespace CORE{
 		int seqIndex;
 
 		/*policy*/
-		REAP1::ReAP1Policy::REAP1STATE xState;
+		//REAP1::ReAP1Policy::REAP1STATE xState;
+		APPQL::AppQLearningPolicy::AppQLearningSTATE xState;
 		bool actionTaken;
 		int action;
 

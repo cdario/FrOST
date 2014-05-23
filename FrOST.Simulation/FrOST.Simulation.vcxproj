@@ -98,9 +98,12 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AppQLController.cpp" />
     <ClCompile Include="JunctionCore.cpp" />
     <ClCompile Include="Environment.cpp" />
-    <ClCompile Include="QP2JadeController.cpp" />
+    <ClCompile Include="QP2JadeController.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="QP2JadeControllerSingle.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClCompile>

@@ -27,11 +27,11 @@ namespace APPQL{
 		nActions = 3;
 		
 		nFeatures = 5;	// 3 max queue lengths + phase index + green remaining
-		approxFeatures = new std::vector(nFeatures; 0.0);	
+		approxFeatures.resize(nFeatures);
 		approxParameters.resize(nActions);
-		for (int ip=0; ip < approxParameters.size(); ip++)
+		for (unsigned ip=0; ip < approxParameters.size(); ip++)
 		{
-			approxParameters(ip).resize(nFeatures);
+			approxParameters[ip].resize(nFeatures);
 		}
 	}
 
@@ -48,11 +48,18 @@ namespace APPQL{
 		return state;
 	}
 	
-	AppQLearningPolicy::AppQLearningSTATE AppQLearningPolicy::setState(AppQLearningPolicy::AppQLearningSTATE state)
+	void AppQLearningPolicy::updateApproxFeatures(AppQLearningPolicy::AppQLearningSTATE state)
 	{
+		//map state to features in the approximator
+		approxFeatures[0] = state.queueLengths[0];
+		approxFeatures[1] = state.queueLengths[1];
+		approxFeatures[2] = state.queueLengths[2];
+		approxFeatures[3] = state.phaseIndex;
+		approxFeatures[4] = state.greenRemaining;		
 		tState = state;
-		return tState;
 	}
+
+
 	// TODO: make this function faster, slows down DLL load
 	void AppQLearningPolicy::initQValues(double iValue){
 		
@@ -109,9 +116,9 @@ namespace APPQL{
 	std::vector< double> AppQLearningPolicy::getQvalues(AppQLearningSTATE state){
 		std::vector< double> newQ;
 
-		for(unsigned action = 0; action < nActions; ac++)
+		for(int a = 0; a < nActions; ++a)
 		{
-			newQ.push_back(getQvalue(state, action));
+			newQ.push_back(getQvalue(state, a));
 		}
 
 		return newQ;
@@ -159,52 +166,17 @@ namespace APPQL{
 	
 		return 0;
 	}
+	void AppQLearningPolicy::setApproxParam(int action, int kParam, double newParamValue){
+		approxParameters[action][kParam] = newParamValue;
+	}
 
-	void AppQLearningPolicy::setQvalue(AppQLearningSTATE state, int action, double newQ){
-		
-		// TODO: UPDATE THETAS for Q-APPROXIMATORS
-		/**
-		 * 		Update approximator parameters theta
-		 * 		Update approximator feature based on state
-		 */
-		
-		for (int i = 0; i < nFeatures; ++i)
-		{
-
-			approxParameters[action][i] += alpha()
-
-			approxParameters[action][0] = 
-			approxParameters[action][1]
-			approxParameters[action][2]
-			approxParameters[action][3]
-			approxParameters[action][4]
-		}
-
-		approxFeatures[0] = state.queueLengths[0];
-		approxFeatures[1] = state.queueLengths[1];
-		approxFeatures[2] = state.queueLengths[2];
-		approxFeatures[3] = state.phaseIndex;
-		approxFeatures[4] = state.greenRemaining;
-
-
-
-
-
-		switch (action)
-		{
-			case 0: Q[state].qValue1 = newQ;	// TODO: Set a distinct Q-value based on each action...
-						break;
-			case 1: Q[state].qValue2 = newQ;
-						break;
-			case 2: Q[state].qValue3 = newQ;
-						break;
-		}
-		
+	void AppQLearningPolicy::setApproxFeature(int kParam, double newFeatureValue){
+		approxFeatures[kParam] = newFeatureValue;
 	}
 
 	/**
-	 * Updated to FUNCTION APPROXIMATION Q(s,a) = SUM( theta(a,n)*f(n) ) based on Q-APPROX from current Thetas
-	 * @param  state
+	 * for linear function approximation  based on Q-APPROX from current Thetas
+	 * @param  state 	not used- encoded in approxFeatues
 	 * @param  action
 	 * @return	Q-value
 	 */
@@ -212,32 +184,34 @@ namespace APPQL{
 
 		double q_value = 0;
 
-		for (int n=0; n <= NUM_FEATURES; n++)
+		for (int feat=0; feat < nFeatures; feat++)
 		{
-			q_value += approxParameters[action][n] * approxFeatures[n];
+			q_value += getApproxParameter(action,feat) * getApproxFeature(feat); /*	Q(s,a) = SUM_n( theta(a,n)*f(n) )	*/
 		}
 
 		return q_value;	
-
-		// switch (action)
-		// {
-		// 	case 0: return Q[state].qValue1; break;
-		// 	case 1: return Q[state].qValue2; break;
-		// 	case 2: return Q[state].qValue3; break;
-		// 	default: return 0.0; break;
-		// }
 	}
 
 	double AppQLearningPolicy::getMaxQvalue(AppQLearningSTATE state){
 		
-		return 0.001;//TODO: remove
 		double maxQ = -DBL_MAX;
 		std::vector< double> qValues = getQvalues(state);
-		for (unsigned int a= 0; a< qValues.size(); a++)
+		for (unsigned int a= 0; a < qValues.size(); a++)
 		{
 			if (qValues[a] > maxQ)
 				maxQ = qValues[a];
 		}
 		return maxQ;
+	}
+
+	double AppQLearningPolicy::getApproxFeature(int feature)
+	{
+
+		return approxFeatures[feature];
+	}
+
+	double AppQLearningPolicy::getApproxParameter(int action, int feature)	
+	{
+		return approxParameters[action][feature];
 	}
 }
