@@ -94,7 +94,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="3x3node_config.txt" />
+    <None Include="arrival-horizon.txt" />
+    <None Include="node_config.txt" />
     <None Include="phasing.txt" />
+    <None Include="phasing_4dir.txt" />
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>

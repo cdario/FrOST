@@ -1,7 +1,3 @@
-//************************************************
-
-// This is the main DLL file.
-//#include "stdafx.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -480,17 +476,52 @@ namespace APPQL{
 		double currentQ;		// Q-learning
 		double maxQ;
 		double newParamValue;
+		bool printMe = false;
+
+		ofstream fout("c:\\temp\\updates-rules.txt",ios::app);
+		
 
 		currentQ = policy.getQvalue(state, action);
 		maxQ = policy.getMaxQvalue(newState);
+		
+		
+		if (!fout)	
+			cout << "could not open file";
+		//else
+		//	fout << "k\taction\tcurrent\talpha\treward\tdiscount\tmaxQ\tactualQ\tdelta\tnew\n";
+			//fout << "k"<<setw(10)<<"action"<<setw(10)<<"current"<<setw(10)<<"alpha"<<setw(10)<<"reward"<<setw(10)<<"discount"<<setw(10)<<"maxQ"<<setw(10)<<"actualQ"<<setw(10)<<"delta"<<setw(10)<<" = new\r\n";
 
-		 for (int kParam = 0; kParam < policy.nFeatures; ++kParam)
+		for (int kParam = 0; kParam < policy.nFeatures; ++kParam)
 		 {
-		 	newParamValue = policy.getApproxParameter(action, kParam) 
-		 				+ learningRate*(reward + rewardDiscountFactor*maxQ - currentQ)*getPartialQ(action, kParam);
+			/**
+			 * see delta-rule for online least-squares
+			 * theta_i = theta_i + alpha(observed_total_reward_s_j - predicted_total_reward_theta_s)* partial (predicted/theta_i)
+			 */
+			
+			double currentTheta = policy.getApproxParameter(action, kParam);
+			double partialD = getPartialQ(action, kParam);
+
+			newParamValue = currentTheta + learningRate*(reward + rewardDiscountFactor*maxQ - currentQ)*partialD;
+
+			if (printMe)
+			{
+				//fout <<kParam<<"\t\t"<<action<<"\t\t"<<currentTheta<<"\t\t"<<learningRate<<"\t\t"<<reward<<"\t\t"<<rewardDiscountFactor<<"\t\t"<<maxQ;
+				//fout <<"\t\t"<<currentQ<<"\t\t"<<partialD<<"\t\t = "<<newParamValue<<"	\r\n";
+
+				fout <<kParam<<"\t"<<action<<"\t"<<currentTheta<<"\t"<<learningRate<<"\t"<<reward<<"\t"<<rewardDiscountFactor<<"\t"<<maxQ;
+				fout <<"\t"<<currentQ<<"\t"<<partialD<<"\t = "<<newParamValue<<"\n";
+
+			}
+		 	
 		 	policy.setApproxParam(action, kParam, newParamValue); /* 	update all approx parameters theta for current action */
+		 	
 		 }
+		if(fout){
+			fout<<"\r\n";
+			fout.close();
+		}
 	}
+
 
 	//8
 	/*	update state in agent*/
@@ -523,7 +554,7 @@ namespace APPQL{
 
 	double AppQLearning::getPartialQ (int action, int parIndex){
 		
-		//linear function: 1st order partial derivate = feature value (coeficient)
+		//linear function: 1st order partial derivate = feature coeficient
 		return policy.getApproxFeature(parIndex);
 	}
 

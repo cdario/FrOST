@@ -16,7 +16,19 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
+    <None Include="3x3node_config.txt">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="arrival-horizon.txt">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="node_config.txt">
+      <Filter>Resource Files</Filter>
+    </None>
     <None Include="phasing.txt">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="phasing_4dir.txt">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

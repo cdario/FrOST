@@ -161,18 +161,21 @@ namespace CORE{
 		if(!actionTaken)
 		{
 			action = agentController.selectAction(xState); //5	// TODO: check whether to init -state field- somewhere else...  
-			control.clear();
+			//control.clear();
+			std::vector<int> mControl;
 			switch(action)
 			{
 			case 0:	cPhase = currentPhaseIndex;	// back to current phase; TODO: manage all-red
-				control.push_back(GREEN_EXTENSION);	//NEW
+				mControl.push_back(GREEN_EXTENSION);	//NEW
 				//currentControl += GREEN_EXTENSION;	//extend
 				break;
-			case 1: control.push_back(MIN_GREEN);	// switch next
+			case 1: mControl.push_back(MIN_GREEN);	// switch next
 				break;
-			case 2: control.push_back(0); control.push_back(MIN_GREEN); // skip next and switch
+			case 2: mControl.push_back(0); mControl.push_back(MIN_GREEN); // skip next and switch
 				break;
 			}
+			control.clear();
+			control.swap(mControl);
 			//qps_GUI_printf("\a ACTION %i",action);
 		}
 		else{
@@ -197,21 +200,25 @@ namespace CORE{
 			tempSeq.clear();			
 			tempSeq.reserve(MAX_SEQUENCE+1);		// TODO: check it
 
-			for (vector<int>::const_iterator i = control.begin(); i != control.end(); ++i)
+			const std::vector<int> localControl = control;	// a local copy to avoid incompatible iterators
+
+
+			vector<int>::const_iterator itc = localControl.begin();
+			while(itc != localControl.end())
+			//for (vector<int>::const_iterator i = control.begin(); i != control.end(); ++i)
 			{
-				int dur = *i;
-				if (dur > 0)				/*	skip phase	*/
+				int dur = *itc;
+				if (dur > 0)				/*	don't include if skip-phase	*/
 				{
 					CONTROLDATA ctrl;
 					ctrl.phase = cPhase;
 					ctrl.duration = dur;
-					auto bg =  tempSeq.begin();
-					tempSeq.insert(bg,ctrl);
+					auto begi =  tempSeq.begin();
+					tempSeq.insert(begi,ctrl);
 				}
-
 				message << phases[cPhase] << ":" << dur << "\t";
-
 				cPhase = (cPhase == 2) ? 0: cPhase+1;				/* update phase	*/
+				++itc;
 			}
 
 			float hh = qpg_CFG_simulationTime();
@@ -528,7 +535,7 @@ namespace CORE{
 			else	// if vehicle still in the link, add it to the current horizon
 			{
 				float arrivalTimeStep  = getHorizonStep(detectedArrivals[i], simulationTime);
-				int horizonTime= (int)(arrivalTimeStep * 2); 
+				int horizonTime= (int)(arrivalTimeStep * 2); // todo: crashing with outofbounds down
 				/*
 				0 0.5 1 1.5 2 2.5 ... 34
 				0  1  2  3  4  5 ... 69

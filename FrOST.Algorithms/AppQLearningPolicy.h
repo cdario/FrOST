@@ -134,23 +134,12 @@ namespace APPQL {
 		 * elapsed_green =			11
 		 */
 
-		/**
-		 * f vector of features representing state
-		 */
+		int nFeatures;			/*   f vector of features representing state 	*/
+		std::vector<double> approxFeatures;	/*  f(k) arbitrary functions (linear or nonlinear) of the state variables	*/
+		// TODO: try new function from state variables ... pp. 847 
+		std::vector< std::vector<double> > approxParameters;	/* 	theta(k,a) to be learned, (approximator)	*/
 
-		
-		int nFeatures;
-
-
-
-		std::vector<double> approxFeatures;	// f_n
-
-		/**
-		 *  theta(k,a) to be learned, (approximator)
-		 */
-		std::vector< std::vector<double> > approxParameters;	// theta^a_n
-
-		double AppQLearningPolicy::getApproxFeature(int feature);
+		double AppQLearningPolicy::getApproxFeature(int feature); 
 		double AppQLearningPolicy::getApproxParameter(int action, int feature);	
 
 		APPQLPOLICY_API void updateApproxFeatures(AppQLearningSTATE state);		/*	2	*/	//NEW

@@ -175,7 +175,8 @@ namespace APPQL{
 	}
 
 	/**
-	 * for linear function approximation  based on Q-APPROX from current Thetas
+	 * for linear function approximation  based on Q-APPROX from current thetas
+	 * approx_params changes affect the value of the following estimations (generalisation)
 	 * @param  state 	not used- encoded in approxFeatues
 	 * @param  action
 	 * @return	Q-value
@@ -187,6 +188,9 @@ namespace APPQL{
 		for (int feat=0; feat < nFeatures; feat++)
 		{
 			q_value += getApproxParameter(action,feat) * getApproxFeature(feat); /*	Q(s,a) = SUM_n( theta(a,n)*f(n) )	*/
+
+
+			//TODO: print and check convergence?
 		}
 
 		return q_value;	
