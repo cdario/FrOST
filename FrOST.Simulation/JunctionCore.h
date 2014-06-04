@@ -162,6 +162,7 @@ namespace CORE{
 		/*threading*/
 		void manageThread();
 		const std::vector<CONTROLDATA> getTempSeq();
+		const std::vector<int> & getControl();
 		static unsigned __stdcall ThreadStaticFunc( void* data );
 		unsigned __stdcall ThreadFunc(void* data);
 

@@ -6,6 +6,7 @@
 #include <fstream>
 #include <process.h>
 #include <time.h>
+#include <exception>
 
 #ifdef WIN32
 #include <Windows.h>
@@ -39,6 +40,8 @@ namespace CORE{
 #define		MAX_SEQUENCE 7
 #define		UPSTREAM_DETECTOR_DISTANCE 150 //700       /* metres */
 #define		VEHICLE_LENGTH 5       /* metres */
+#define		SPEED_THRESHOLD 2 //700       /* percent discount for expected arrival time  */
+	
 
 	/*definition*/
 	string id;
@@ -133,6 +136,8 @@ namespace CORE{
 		//phases = {"A","B","C"};
 
 		directions.resize(5);
+
+		tempSeq.reserve(MAX_SEQUENCE+1);
 	}
 
 	JunctionCore::~JunctionCore(){
@@ -196,12 +201,13 @@ namespace CORE{
 		{				/* late check to avoid algorithm latency issues */
 			string str;
 			std::stringstream message;
-			//cPhase = nextPhase;
-			tempSeq.clear();			
-			tempSeq.reserve(MAX_SEQUENCE+1);		// TODO: check it
 
-			const std::vector<int> localControl = control;	// a local copy to avoid incompatible iterators
+			tempSeq.clear();
+			// tempSeq.reserve(MAX_SEQUENCE+1);		// TODO: check it
+			vector<CONTROLDATA> tempLocal;
+			tempLocal.reserve(MAX_SEQUENCE+1);
 
+			const std::vector<int> localControl = getControl();	// a local copy to avoid incompatible iterators
 
 			vector<int>::const_iterator itc = localControl.begin();
 			while(itc != localControl.end())
@@ -213,13 +219,21 @@ namespace CORE{
 					CONTROLDATA ctrl;
 					ctrl.phase = cPhase;
 					ctrl.duration = dur;
-					auto begi =  tempSeq.begin();
-					tempSeq.insert(begi,ctrl);
+					auto begi =  tempLocal.begin();
+
+					try{
+						tempLocal.insert(begi,ctrl);			/*TODO:	unmanaged exception	*/
+					}catch(exception *e)
+					{
+						qps_GUI_printf("---------------EXCEPTION caught %s", e->what());
+					}
 				}
 				message << phases[cPhase] << ":" << dur << "\t";
 				cPhase = (cPhase == 2) ? 0: cPhase+1;				/* update phase	*/
 				++itc;
 			}
+
+			tempSeq.swap(tempLocal);	/*	new - avoid incompatible iterators 	*/
 
 			float hh = qpg_CFG_simulationTime();
 			float mm =  fmod(hh, 60); 
@@ -493,7 +507,7 @@ namespace CORE{
 	float JunctionCore::getHorizonStep(ARRIVALDATA arrival, float simulationTime)
 	{
 		float elapsedTime = simulationTime - arrival.detectionTime;
-		float distanceToStopline = UPSTREAM_DETECTOR_DISTANCE - arrival.speed * elapsedTime; // toDetector - travelled
+		float distanceToStopline = UPSTREAM_DETECTOR_DISTANCE - (arrival.speed - SPEED_THRESHOLD)* elapsedTime; // toDetector - travelled
 		float timeToStopline = distanceToStopline / arrival.speed;
 		return adjustToStep(timeToStopline); // floor, .5 or ceiling
 	}
@@ -544,8 +558,14 @@ namespace CORE{
 				if (horizonTime < HORIZON_SIZE) //70-s (0-69)
 				{
 					ARRIVALDATA detected = detectedArrivals[i];
-					arrivalsHorizon[horizonTime][detected.phase]+=1;
+					try{
 
+						arrivalsHorizon[horizonTime][detected.phase]+=1;	
+
+					}catch(exception& e)
+					{
+						qps_GUI_printf("update horizon exception", e.what()); 
+					}
 					//	if(horizonTime < 1)	//imminent arrivals; single point in time to avoid multiple count
 					//	{
 					//		qps_GUI_printf("+++ ARRIVAL by %i", detectedArrivals[i].phase);	// NEW add arrivals counter; tested OK
@@ -824,13 +844,16 @@ namespace CORE{
 					(LPVOID)this, // arg list holding the "this" pointer
 					0, // so we can later call ResumeThread()
 					&threadID);		/* init new thread */
-
 			}
 		}
 	}
 
 	const std::vector<CONTROLDATA> JunctionCore::getTempSeq(){
 		return tempSeq;
+	}
+
+	const std::vector<int> & JunctionCore::getControl(){
+		return control;
 	}
 
 }

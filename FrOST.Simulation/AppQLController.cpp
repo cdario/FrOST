@@ -374,8 +374,9 @@ void qpx_NET_postOpen(void)
 void qpx_DRW_modelView(void)
 {
 	qps_DRW_linewidth(3.0);
-	qps_DRW_colour(API_CYAN3);
-
+	qps_DRW_colour(API_RED2);
+	//qps_DRW_colourRGB(float r, float g, float b); 
+	int offset = 30;
 	for (vector<JunctionCore*>::const_iterator it = junctionIn.begin(); it != junctionIn.end(); ++it)
 	{
 		float x;
@@ -383,9 +384,21 @@ void qpx_DRW_modelView(void)
 		float z;
 		JunctionCore* jcore = *it;
 		qpg_POS_node(jcore->node, &x, &y, &z);
-		//qps_DRW_colour(API_MAGENTA3);
-		qps_DRW_hollowCircleXY(x,y,40);
-				
+		qps_DRW_hollowRectangleXY(x-offset,y-offset,x+offset,y+offset);
+
+		qps_DRW_linewidth(1.0);
+		const std::vector<int> seq = jcore->eQueueCount;
+		if (seq.size() ==3)
+		{
+				ostringstream ost;
+				ost << " A:"<< seq[0] << " B:" << seq[1] << " C:" << seq[2];
+				string ans= ost.str();
+
+				char *pline = new char[ans.size() + 1];
+				strcpy (pline, ans.c_str());
+				qps_DRW_stringXY(pline, x-30,y+30, 5);
+		}
+
 	}
 }
 
@@ -395,6 +408,7 @@ void qpx_DRW_modelView(void)
 
 void qpx_NET_timeStep()
 {
+	Sleep(5);	/* induced to catch up with thread */
 	float step = qpg_CFG_timeStep();
 	float currentTime = qpg_CFG_simulationTime();
 
@@ -411,6 +425,8 @@ void qpx_NET_timeStep()
 		junctionIn[i]->estimateQueues(currentTime);
 		junctionIn[i]->estimateDelay();
 		junctionIn[i]->updateState();	//pre-5
+
+		
 
 		junctionIn[i]->manageThread();
 
@@ -505,6 +521,10 @@ void qpx_NET_timeStep()
 	}
 
 	envo.updateJunctions(jvm_r,"5 10");
+
+
+
+
 	//envo.updateJunctions(jvm_r, "", "");
 }
 
