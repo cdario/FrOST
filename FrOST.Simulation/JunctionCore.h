@@ -77,15 +77,16 @@ namespace CORE{
 		/*definition*/
 		string id;
 		NODE* node;
-		vector<LOOPDATA> upstreamLoopData;
-		vector<LOOPDATA>  stoplineLoopData;
-		vector<DETECTOR*> upstreamDetectors;
-		vector<DETECTOR*>  stoplineDetectors;
+		std::vector<LOOPDATA> upstreamLoopData;
+		std::vector<LOOPDATA>  stoplineLoopData;
+		std::vector<DETECTOR*> upstreamDetectors;
+		std::vector<DETECTOR*>  stoplineDetectors;
+		float upstreamDetectorDistance;
 		//const char*	phases [3];
-		vector<char*> phases;
+		std::vector<char*> phases;
 		double leftTurnProportion; /* simplified turning proportions, must agree OD Matrix */ //nbefore 0.2
 		double rightTurnProportion;
-		vector<string> directions;
+		std::vector<string> directions;
 
 		/*state*/
 		vector<vector<SIGPRI> > phasing;	//switching rules
@@ -151,6 +152,7 @@ namespace CORE{
 		float getHorizonStep(ARRIVALDATA arrival, float simulationTime);
 		void updateHorizon( float simulationTime);
 		void probeUpstreamDetectors(float currentTime);
+		void setUpstreamDistance();
 
 		/*info and control*/
 		int getDetectorPhaseGroup(int detectorIndex);

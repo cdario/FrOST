@@ -140,6 +140,18 @@ namespace CORE{
 		tempSeq.reserve(MAX_SEQUENCE+1);
 	}
 
+	void JunctionCore::setUpstreamDistance(){
+		if (upstreamLoopData.size()>0)
+			{
+				LOOP* loo = upstreamLoopData.at(0).loop;
+				upstreamDetectorDistance = qpg_DTL_upstreamDistance(loo);
+			}
+			else
+			{
+				upstreamDetectorDistance = UPSTREAM_DETECTOR_DISTANCE;
+			}
+	}
+
 	JunctionCore::~JunctionCore(){
 
 	}
@@ -507,7 +519,7 @@ namespace CORE{
 	float JunctionCore::getHorizonStep(ARRIVALDATA arrival, float simulationTime)
 	{
 		float elapsedTime = simulationTime - arrival.detectionTime;
-		float distanceToStopline = UPSTREAM_DETECTOR_DISTANCE - (arrival.speed - SPEED_THRESHOLD)* elapsedTime; // toDetector - travelled
+		float distanceToStopline = upstreamDetectorDistance - (arrival.speed - SPEED_THRESHOLD)* elapsedTime; // toDetector - travelled
 		float timeToStopline = distanceToStopline / arrival.speed;
 		return adjustToStep(timeToStopline); // floor, .5 or ceiling
 	}
@@ -528,7 +540,7 @@ namespace CORE{
 	}
 
 	/* ---------------------------------------------------------------------
-	* include in the horizon or remove them from the detection data
+	* include arrivals in the horizon or remove them from the detection data
 	* --------------------------------------------------------------------- */
 
 	void JunctionCore::updateHorizon( float simulationTime)
@@ -538,13 +550,15 @@ namespace CORE{
 		for(unsigned int i=0; i<detectedArrivals.size(); i++) // for all detected vehicles
 		{
 			if (detectedArrivals[i].arrivalTime < simulationTime) // if estimated arrival has passed
-			{														
+			{	
 				int iPhase = detectedArrivals[i].phase;
+				stoplineArrivals[iPhase] += 1;		// NEW : EAT has elapsed, then add to stopline arrivals
+				qps_GUI_printf("*** ARRIVAL %f: Phase(%i) ETA %f", simulationTime, iPhase,detectedArrivals[i].arrivalTime); 													
+				
 				std::vector<ARRIVALDATA>::iterator it = detectedArrivals.begin();
 				std::advance(it, i);
 				detectedArrivals.erase(it);		// remove vehicle from the vector!
 				// difference between counts then is queueing!
-				stoplineArrivals[iPhase] += 1;		// NEW : EAT has elapsed, then add to stopline arrivals
 			}
 			else	// if vehicle still in the link, add it to the current horizon
 			{
@@ -555,12 +569,13 @@ namespace CORE{
 				0  1  2  3  4  5 ... 69
 				*/
 
-				if (horizonTime < HORIZON_SIZE) //70-s (0-69)
+				if (horizonTime < HORIZON_SIZE) 
 				{
 					ARRIVALDATA detected = detectedArrivals[i];
 					try{
 
-						arrivalsHorizon[horizonTime][detected.phase]+=1;	
+						arrivalsHorizon.at(horizonTime).at(detected.phase) +=1;
+						//arrivalsHorizon[horizonTime][detected.phase]+=1;	
 
 					}catch(exception& e)
 					{
@@ -633,63 +648,69 @@ namespace CORE{
 
 	void JunctionCore::estimateQueues(float currentTime)		//NEW
 	{
-		//int exArrivals[3] = {0,0,0};
-		//eQueueCount[0]= 0;eQueueCount[1]= 0;eQueueCount[2]= 0;
-		int stopLineDepartures[3] = {0,0,0};
+		std::vector<int> stoplineDepartures(PHASE_COUNT,0);	// vehicles that have crossed the stopline detector
 
 		for(int detectorIndex=0; detectorIndex < 8 ; detectorIndex++) 	/* check all loop detectors  (stopline); two per approach	*/
 		{
 			LOOP* stoplineLoop = stoplineLoopData[detectorIndex].loop;
-			int currentStopCount = qpg_DTL_count(stoplineLoop, 0); 		/*	zero to count all vehicle types	*/
+			int currentStopCount = 0;
+
+			if (qpg_DTL_occupancy(stoplineLoop, APILOOP_INCOMPLETE) > 0)	/* NEW: part of the vehicle still over the loop  */
+				currentStopCount = stoplineLoopData[detectorIndex].lastCount; /* don't update yet */
+			else
+				currentStopCount = qpg_DTL_count(stoplineLoop, 0); 		/* 	zero to count all vehicle types	*/
 
 			//int	iPhase = getPhaseByProbability(detectorIndex);	// prev implem - noisy function; find another solution
 
 			int phGroup = getDetectorPhaseGroup(detectorIndex);
 
-			if (phGroup == 2)
-				stopLineDepartures[phGroup] += currentStopCount;
+			if (phGroup == 2){	// cross traffic
+
+				stoplineDepartures.at(phGroup) += currentStopCount;
+			}
 			else
 			{
-				int leftTurners = (int) (currentStopCount * leftTurnProportion); //NEW!!! distribute based on turning rate!
-				stopLineDepartures[0] += currentStopCount - leftTurners;	//TODO: allocate left over unit somewhere?
-				stopLineDepartures[1] += leftTurners;
+				int leftTurners = (int) ceil(currentStopCount * leftTurnProportion); //NEW!!! distribute based on turning rate!
+				stoplineDepartures.at(0) += currentStopCount - leftTurners;	//TODO: allocate left over unit somewhere?
+				stoplineDepartures.at(1) += leftTurners;
 			}																//TODO: use currentPhaseIndex to discount difference btwn counts?
 
-			//stopLineDepartures[iPhase] += currentStopCount;	// prev implementation
+			//stoplineDepartures.at(iPhase) += currentStopCount;	// prev implementation
+			//stoplineLoopData[detectorIndex].lastCount -= currentStopCount;	// previous reading
 			stoplineLoopData[detectorIndex].lastCount = currentStopCount;	// previous reading
 		}
 
 		int diff;											/* deal with error from turning probability */
-		if (stoplineArrivals[1] < stopLineDepartures[1])
+		if (stoplineArrivals[1] < stoplineDepartures.at(1))
 		{
-			diff = stopLineDepartures[1] - stoplineArrivals[1];
+			diff = stoplineDepartures.at(1) - stoplineArrivals[1];
 			stoplineArrivals[0] -= diff;
 			stoplineArrivals[1] += diff;
 		}
 		else
 		{
-			if (stoplineArrivals[0] < stopLineDepartures[0])
+			if (stoplineArrivals[0] < stoplineDepartures.at(0))
 			{
-				diff = stopLineDepartures[0] - stoplineArrivals[0];
+				diff = stoplineDepartures.at(0) - stoplineArrivals[0];
 				stoplineArrivals[1] -= diff;
 				stoplineArrivals[0] += diff;
 			}
 		}
 		for (int phi = 0; phi < PHASE_COUNT; phi++)
 		{
-			eQueueCount[phi] = stoplineArrivals[phi] - stopLineDepartures[phi]; //- currentStopCount;
+			eQueueCount[phi] = stoplineArrivals[phi] - stoplineDepartures.at(phi); //- currentStopCount;
 
-			if (phi != currentPhaseIndex && eQueueCount[phi] > 2)
-			{
-				eQueueCount[phi] += 2;		/*	stopped vehicles on stop line detector for alls phases (A B c) */
-				if (phi == 2)
-					eQueueCount[phi] += 2;	/*	stopped vehicles on stop line detector for phase C*/
+			//if (phi != currentPhaseIndex && eQueueCount[phi] > 2)
+			//{
+			//	eQueueCount[phi] += 2;		/*	stopped vehicles on stop line detector for alls phases (A B c) */
+			//	if (phi == 2)
+			//		eQueueCount[phi] += 2;	/*	stopped vehicles on stop line detector for phase C*/
 
-			}
+			//}
 		}
 
 		qps_GUI_printf(">>> stopline arrivals: A[%i] B[%i] C[%i]", stoplineArrivals[0], stoplineArrivals[1], stoplineArrivals[2]); 
-		qps_GUI_printf(">>> stopline departur: A[%i] B[%i] C[%i]", stopLineDepartures[0], stopLineDepartures[1], stopLineDepartures[2]); 
+		qps_GUI_printf(">>> stopline departur: A[%i] B[%i] C[%i]", stoplineDepartures.at(0), stoplineDepartures.at(1), stoplineDepartures.at(2)); 
 
 		qps_GUI_printf(">> Current queues : A[%i] B[%i] C[%i]", eQueueCount[0], eQueueCount[1], eQueueCount[2]); 
 
@@ -808,7 +829,7 @@ namespace CORE{
 				dta.speed = qpg_DTL_speed(upstLoop, APILOOP_COMPLETE);	
 				if (dta.speed == 0.0)	/* validating overflown queue, replace with arbitrarily low speed */
 					dta.speed = (float)0.1;
-				dta.arrivalTime = getEstimatedArrivalTime(currentTime, dta.speed, UPSTREAM_DETECTOR_DISTANCE);
+				dta.arrivalTime = getEstimatedArrivalTime(currentTime, dta.speed, (int)qpg_DTL_upstreamDistance(upstLoop));
 				dta.detectionTime = currentTime;
 				dta.phase = getPhaseByProbability(i);
 				detectedArrivals.push_back(dta);

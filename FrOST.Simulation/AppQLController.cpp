@@ -276,6 +276,8 @@ void qpx_NET_postOpen(void)
 			appr 0	0	1	1	2	2	3	3
 			*/
 		}
+		junctionX->setUpstreamDistance();
+
 		tempI = GetTimeMs64(); 	stamps.push_back(tempI);
 		/********		 Agent instance(s)		******/
 
