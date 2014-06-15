@@ -51,7 +51,7 @@ using namespace CORE;
 * --------------------------------------------------------------------- */
 
 #define 	PHASE_COUNT 3       /* the number of phases */
-#define 	MOVEMENT_COUNT 10       /* based on no of phases */
+#define 	MOVEMENT_COUNT 12       /* based on no of phases, include all-phases barred movs */
 #define		INITIAL_PHASE_INDEX 2   
 #define		NUM_LANES 2
 #define		MIN_GREEN 5
@@ -426,15 +426,13 @@ void qpx_NET_timeStep()
 		junctionIn[i]->updateHorizon(currentTime);
 		junctionIn[i]->estimateQueues(currentTime);
 		junctionIn[i]->estimateDelay();
-		junctionIn[i]->updateState();	//pre-5
-
-		
-
+		junctionIn[i]->updateState(currentTime);	//pre-5		/* you may need to move this for SARSA */
 		junctionIn[i]->manageThread();
 
 		junctionIn[i]->timeToRed = junctionIn[i]->lastControlTime + junctionIn[i]->currentControl; /*	switch points	*/
 		junctionIn[i]->timeToNext = junctionIn[i]->timeToRed + ALL_RED;
-		//qps_GUI_printf("toRed %f --- toNxt %f", timeToRed, timeToNext);
+		
+		//qps_GUI_printf("toRed %f --- toNxt %f", junctionIn[i]->timeToRed, junctionIn[i]->timeToNext);
 		if (junctionIn[i]->isSequenceReady)
 		{
 			if (junctionIn[i]->action == 0)
@@ -449,7 +447,7 @@ void qpx_NET_timeStep()
 				std::vector<CONTROLDATA> _new;
 				_new = junctionIn[i]->tempSeq;
 				std::vector<CONTROLDATA>::const_iterator iterator = _new.begin();
-				junctionIn[i]->controlSeq.clear();							
+				junctionIn[i]->controlSeq.clear();	
 				junctionIn[i]->controlSeq.reserve(_new.size());
 				while(iterator != _new.end())
 				{

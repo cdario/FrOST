@@ -95,8 +95,9 @@ namespace CORE{
 		vector<int> stoplineArrivals; // total vehicles arriving at stop line 
 		vector<int> eQueueCount; // in vehicles per phase
 		int currentPhaseIndex;
-		float timeToRed;
-		float timeToNext;
+		int currentPhaseDuration;
+		float timeToRed;		//simulation time for next all-red
+		float timeToNext;		//simulation time for next phase
 
 		/*controller*/
 		//REAP1::ReAP1 agentController;
@@ -156,7 +157,7 @@ namespace CORE{
 
 		/*info and control*/
 		int getDetectorPhaseGroup(int detectorIndex);
-		void updateState();
+		void updateState(float currentTime);
 		void setController(int ph, int pri);	//NEW! unimplemented
 		void setControllerAllRed();
 		void setControllerNext(int ph);

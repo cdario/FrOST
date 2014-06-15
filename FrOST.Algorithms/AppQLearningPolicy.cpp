@@ -218,4 +218,17 @@ namespace APPQL{
 	{
 		return approxParameters[action][feature];
 	}
+
+	bool AppQLearningPolicy::compareStates(AppQLearningPolicy::AppQLearningSTATE a, AppQLearningPolicy::AppQLearningSTATE b)	
+	{
+		bool flag = true;
+		for (unsigned i = 0; i < a.queueLengths.size(); ++i)
+		{
+			flag = flag & (a.queueLengths.at(i) == b.queueLengths.at(i));
+		}
+
+		flag = flag & (a.phaseIndex == b.phaseIndex) & (a.greenRemaining == b.greenRemaining);
+
+		return flag;
+	}
 }

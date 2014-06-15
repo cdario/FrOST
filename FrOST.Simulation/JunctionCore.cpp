@@ -29,18 +29,18 @@ using namespace std;
 namespace CORE{
 
 #define 	PHASE_COUNT 3       /* the number of phases */
-#define 	MOVEMENT_COUNT 10       /* based on no of phases */
+#define 	MOVEMENT_COUNT 12       /* based on no of phases, include all-phases barred movs */
 #define		INITIAL_PHASE_INDEX 2   
 #define		NUM_LANES 2
 #define		MIN_GREEN 5
 #define		GREEN_EXTENSION 5
-#define		MAX_GREEN 50
+#define		MAX_GREEN 55
 #define		ALL_RED 2
 #define		HORIZON_SIZE 15 //70 for isolated
 #define		MAX_SEQUENCE 7
 #define		UPSTREAM_DETECTOR_DISTANCE 150 //700       /* metres */
 #define		VEHICLE_LENGTH 5       /* metres */
-#define		SPEED_THRESHOLD 2 //700       /* percent discount for expected arrival time  */
+#define		SPEED_THRESHOLD 0 //2       /* percent discount for expected arrival time  */
 	
 
 	/*definition*/
@@ -63,6 +63,7 @@ namespace CORE{
 	vector<int> stoplineArrivals; // total vehicles arriving at stop line 
 	vector<int> eQueueCount; // in vehicles per phase
 	int currentPhaseIndex = 0;
+	int currentPhaseDuration = 0;
 	float timeToRed = 0;
 	float timeToNext = 0;
 
@@ -141,15 +142,8 @@ namespace CORE{
 	}
 
 	void JunctionCore::setUpstreamDistance(){
-		if (upstreamLoopData.size()>0)
-			{
-				LOOP* loo = upstreamLoopData.at(0).loop;
-				upstreamDetectorDistance = qpg_DTL_upstreamDistance(loo);
-			}
-			else
-			{
-				upstreamDetectorDistance = UPSTREAM_DETECTOR_DISTANCE;
-			}
+		LOOP* loo = upstreamLoopData.at(0).loop; // assumed equidistant upstream detectors
+		upstreamDetectorDistance = qpg_DTL_upstreamDistance(loo);
 	}
 
 	JunctionCore::~JunctionCore(){
@@ -261,7 +255,7 @@ namespace CORE{
 				break;
 			}
 
-			qps_GUI_printf("\aJ-%s %i:%4.1f \t %s %s",id.c_str(),(int)hh ,mm, message.str().c_str(), act);
+			qps_GUI_printf("\t\t\t\t\t\aJ-%s %i:%4.1f \t %s %s",id.c_str(),(int)hh ,mm, act, message.str().c_str());
 			// ttaken -> for Q-Learning simple table look-up
 			//qps_GUI_printf("\a Core: %im:%4.1fs \t%4.2fs \t %s %s",(int)hh ,mm, ttaken, message.str().c_str(), act);
 		}
@@ -403,7 +397,7 @@ namespace CORE{
 				phasing[iPhase][iMov].outlink = replaceDir(prio[1]);
 				phasing[iPhase][iMov].priority = toPrioEnum(prio[2]);
 
-				if (iMov == 9)
+				if (iMov == (MOVEMENT_COUNT-1))
 				{
 					iMov = 0;
 					iPhase ++;
@@ -553,7 +547,6 @@ namespace CORE{
 			{	
 				int iPhase = detectedArrivals[i].phase;
 				stoplineArrivals[iPhase] += 1;		// NEW : EAT has elapsed, then add to stopline arrivals
-				qps_GUI_printf("*** ARRIVAL %f: Phase(%i) ETA %f", simulationTime, iPhase,detectedArrivals[i].arrivalTime); 													
 				
 				std::vector<ARRIVALDATA>::iterator it = detectedArrivals.begin();
 				std::advance(it, i);
@@ -696,6 +689,7 @@ namespace CORE{
 				stoplineArrivals[0] += diff;
 			}
 		}
+
 		for (int phi = 0; phi < PHASE_COUNT; phi++)
 		{
 			eQueueCount[phi] = stoplineArrivals[phi] - stoplineDepartures.at(phi); //- currentStopCount;
@@ -709,11 +703,12 @@ namespace CORE{
 			//}
 		}
 
+/*
 		qps_GUI_printf(">>> stopline arrivals: A[%i] B[%i] C[%i]", stoplineArrivals[0], stoplineArrivals[1], stoplineArrivals[2]); 
 		qps_GUI_printf(">>> stopline departur: A[%i] B[%i] C[%i]", stoplineDepartures.at(0), stoplineDepartures.at(1), stoplineDepartures.at(2)); 
 
 		qps_GUI_printf(">> Current queues : A[%i] B[%i] C[%i]", eQueueCount[0], eQueueCount[1], eQueueCount[2]); 
-
+*/
 		/*
 		the difference between the number of expected arrival vehicles and the actually departed vehicles at the stop line
 		expected arrival vehicles: from the arrivals Horizon (expected)
@@ -732,22 +727,42 @@ namespace CORE{
 		}
 	}
 
-	void JunctionCore::updateState()
+	void JunctionCore::updateState(float currentTime)
 	{
-		xState.phaseIndex = currentPhaseIndex;
-		xState.greenRemaining = (int)timeToRed;	//TODO: deal with loss of data
-		std::vector<int> quLengths;
-		int eq;
-		for (eq= 2; eq >= 0; eq-- )
+		if (isAllRed){			// no updates during allred
+			currentPhaseDuration = 0;
+		}else
 		{
-			if (eQueueCount[eq] > 10)     //TODO: queue groups 
-				quLengths.push_back(10);
-			else
-				quLengths.push_back(eQueueCount[eq]);
-		}
-		//quLengths.push_back(eQueueCount[2]);quLengths.push_back(eQueueCount[1]);quLengths.push_back(eQueueCount[0]); 
-		xState.queueLengths = quLengths;
 
+			int elapsed = (int)floor(currentTime-lastControlTime);		//TODO: verify loss of data
+			int accGreenDuration = elapsed + currentPhaseDuration;
+			if (currentControl == elapsed)						/*current control is completed then update*/
+				currentPhaseDuration = accGreenDuration;	
+
+			//qps_GUI_printf("c: %f, last: %f, !dur: %i ",currentTime,lastControlTime, currentPhaseDuration);
+
+			if (accGreenDuration >= 0)	// construct new state
+			{
+				APPQL::AppQLearningPolicy::AppQLearningSTATE nState;
+				nState.phaseIndex = currentPhaseIndex;
+				nState.greenRemaining = accGreenDuration;
+
+				std::vector<int> quLengths;
+				for (unsigned eq= 0; eq < eQueueCount.size(); ++eq)
+				{
+					if (eQueueCount[eq] > 10)     //TODO: queue groups 
+						quLengths.push_back(10);
+					else
+						quLengths.push_back(eQueueCount[eq]);
+				}
+				nState.queueLengths = quLengths;
+
+				if(!APPQL::AppQLearningPolicy::compareStates(nState, xState)){
+					xState = nState;
+					//qps_GUI_printf(">>> update-state ph=%i g=%i Q=[%i, %i, %i] ",xState.phaseIndex, xState.greenRemaining, xState.queueLengths.at(0), xState.queueLengths.at(1), xState.queueLengths.at(2)); 
+				}
+			}
+		}
 	}
 
 	/* ---------------------------------------------------------------------
@@ -786,8 +801,8 @@ namespace CORE{
 
 		for (unsigned int i = 0; i < MOVEMENT_COUNT; i++)
 		{
-			char inlnk[10];
-			char outlnk[10];
+			char inlnk[MOVEMENT_COUNT];
+			char outlnk[MOVEMENT_COUNT];
 			strcpy_s(inlnk,  phasing[ph][i].inlink.c_str());
 			strcpy_s(outlnk, phasing[ph][i].outlink.c_str());
 
@@ -803,14 +818,21 @@ namespace CORE{
 	void JunctionCore::setControllerAllRed()
 	{
 		setController(0, APIPRI_BARRED);
-		qps_GUI_printf("--------->J-%s set to RED for %is",id.c_str(), ALL_RED); 
+		qps_GUI_printf("---->J-%s set to RED for %is",id.c_str(), ALL_RED); 
 	}
 
 	void JunctionCore::setControllerNext(int ph)
-	{
+	{	
+		// char * ext ="";
+		 //if (currentPhaseIndex != ph)	//if next is the same = extension
+		 //	currentPhaseDuration = 0; 
+		 //else
+			// currentPhaseDuration+=1;
+	
 		currentPhaseIndex = ph;
+
 		setController(ph, APIPRI_MAJOR);
-		qps_GUI_printf("------------->J-%s set to [%s] for %is",id.c_str(), phases[ph], currentControl); 
+		qps_GUI_printf("------->J-%s set to [%s] for %is ",id.c_str(), phases[ph], currentControl); 
 	}
 
 	/* ---------------------------------------------------------------------

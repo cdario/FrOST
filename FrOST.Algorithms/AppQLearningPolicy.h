@@ -121,6 +121,7 @@ namespace APPQL {
 		APPQLPOLICY_API double getMaxQvalue(AppQLearningSTATE state);
 		APPQLPOLICY_API AppQLearningPolicy::AppQLearningSTATE getStateInstance(std::vector<int> pQueues, int iPhase, int rGreen);
 		
+		APPQLPOLICY_API static bool AppQLearningPolicy::compareStates(AppQLearningPolicy::AppQLearningSTATE a, AppQLearningPolicy::AppQLearningSTATE b)	;
 
 		///* ---------------------------------------------------------------------
 		//* Function Approximation

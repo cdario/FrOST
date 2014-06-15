@@ -119,8 +119,8 @@ namespace APPQL{
 	void AppQLearning::initParameters(){
 		PI = DELAY;
 		red = 1; //1
-		mingreen = 2; //2
-		maxgreen = 50;
+		mingreen = 5; //2
+		maxgreen = 55;	//55
 		startupLostTime = 0;
 		T = 10; //planning horizon
 		M = 9; //maximum number of phases to compute (1 to M-1)
@@ -395,11 +395,9 @@ namespace APPQL{
 		int maxdv = 0;
 
 		//	double udr = ((double) rand() / (RAND_MAX+1));	//OLD
-
 		
 		std::uniform_real_distribution<> realDist(0,1);
 		std::uniform_int_distribution<> intDist(0,	qVals.size());
-		
 
 		double udr = realDist(eng);
 
