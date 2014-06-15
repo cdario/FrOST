@@ -120,7 +120,7 @@ namespace APPQL{
 		PI = DELAY;
 		red = 1; //1
 		mingreen = 5; //2
-		maxgreen = 55;	//55
+		maxgreen = 55;	//50
 		startupLostTime = 0;
 		T = 10; //planning horizon
 		M = 9; //maximum number of phases to compute (1 to M-1)

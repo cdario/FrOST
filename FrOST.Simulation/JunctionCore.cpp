@@ -337,19 +337,19 @@ namespace CORE{
 		// handle error situations/trivial cases
  
 		if (target.length() == 0) {
-		// searching for a match to the empty string will result in
-		// an infinite loop
-		// it might make sense to throw an exception for this case
-		return src;
+			// searching for a match to the empty string will result in
+			// an infinite loop
+			// it might make sense to throw an exception for this case
+			return src;
 		}
  
 		if (src.length() == 0) {
-		return src; // nothing to match against
+			return src; // nothing to match against
 		}
  
 		for (size_t idx = src.find( target); idx != string::npos; idx = src.find( target, idx)) {
-		src.replace( idx, target.length(), repl);
-		idx += repl.length();
+			src.replace( idx, target.length(), repl);
+			idx += repl.length();
 		}
  
 		return src;
@@ -549,8 +549,15 @@ namespace CORE{
 				stoplineArrivals[iPhase] += 1;		// NEW : EAT has elapsed, then add to stopline arrivals
 				
 				std::vector<ARRIVALDATA>::iterator it = detectedArrivals.begin();
-				std::advance(it, i);
-				detectedArrivals.erase(it);		// remove vehicle from the vector!
+				std::advance(it,i);
+				/*int iAdvance = i;
+				
+				while (it!=detectedArrivals.end() && iAdvance > 0)	
+				{
+					++it;
+					--iAdvance;
+				}*/
+				detectedArrivals.erase(it);		// remove vehicle from the vector!	// TODO: this erase is unsafe; iter might be invalid
 				// difference between counts then is queueing!
 			}
 			else	// if vehicle still in the link, add it to the current horizon
@@ -870,7 +877,8 @@ namespace CORE{
 				}
 				__except(EXCEPTION_EXECUTE_HANDLER)	/*	triggered when debugging	*/
 				{
-					qps_GUI_printf("CloseHandle Exception Gracefully Managed!"); /* debugger glitch:  http://stackoverflow.com/q/1550315/777877 */
+					//qps_GUI_printf("CloseHandle Exception Gracefully Managed!"); 
+					///* debugger glitch:  http://stackoverflow.com/q/1550315/777877 */
 				}
 			}
 			if (isAllRed)

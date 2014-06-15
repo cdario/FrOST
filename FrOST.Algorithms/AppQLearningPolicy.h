@@ -123,6 +123,9 @@ namespace APPQL {
 		
 		APPQLPOLICY_API static bool AppQLearningPolicy::compareStates(AppQLearningPolicy::AppQLearningSTATE a, AppQLearningPolicy::AppQLearningSTATE b)	;
 
+
+		APPQLPOLICY_API std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
+		APPQLPOLICY_API std::vector<std::string> split(const std::string &s, char delim);
 		///* ---------------------------------------------------------------------
 		//* Function Approximation
 		//* --------------------------------------------------------------------- */
@@ -146,6 +149,9 @@ namespace APPQL {
 		APPQLPOLICY_API void updateApproxFeatures(AppQLearningSTATE state);		/*	2	*/	//NEW
 		APPQLPOLICY_API void AppQLearningPolicy::setApproxParam(int action, int kParam, double newParamValue);	//NEW
 		APPQLPOLICY_API void AppQLearningPolicy::setApproxFeature(int kParam, double newFeatureValue);	//NEW
+
+		APPQLPOLICY_API void AppQLearningPolicy::storeApproxParameters();
+		APPQLPOLICY_API void AppQLearningPolicy::loadApproxParameters();
 
 	};
 }

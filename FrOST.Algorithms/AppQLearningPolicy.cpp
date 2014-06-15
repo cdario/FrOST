@@ -33,6 +33,9 @@ namespace APPQL{
 		{
 			approxParameters[ip].resize(nFeatures);
 		}
+
+		loadApproxParameters();
+
 	}
 
 /* ---------------------------------------------------------------------
@@ -168,6 +171,7 @@ namespace APPQL{
 	}
 	void AppQLearningPolicy::setApproxParam(int action, int kParam, double newParamValue){
 		approxParameters[action][kParam] = newParamValue;
+		storeApproxParameters();
 	}
 
 	void AppQLearningPolicy::setApproxFeature(int kParam, double newFeatureValue){
@@ -210,7 +214,6 @@ namespace APPQL{
 
 	double AppQLearningPolicy::getApproxFeature(int feature)
 	{
-
 		return approxFeatures[feature];
 	}
 
@@ -231,4 +234,79 @@ namespace APPQL{
 
 		return flag;
 	}
+
+	void AppQLearningPolicy::storeApproxParameters()
+	{
+		ofstream fout("c:\\temp\\approx-parameters-out.txt",ios::app);
+
+		if (!fout)	
+			cout << "could not open file";
+		else
+		{
+			for (unsigned action = 0; action < approxParameters.size(); ++action)
+			{
+				for (unsigned feature = 0; feature < approxParameters[action].size(); ++feature)
+				{
+					fout <<approxParameters[action][feature]<<"\t";
+				}
+				fout <<"\n";
+			}
+		}
+
+		if(fout){
+			fout<<"\r\n";	// multiple saves
+			fout.close();
+		}
+	}
+
+	void AppQLearningPolicy::loadApproxParameters()
+	{	
+		string actionRecord;
+		ifstream fin("c:\\temp\\approx-parameters-in.txt",ios::in);
+
+		if (!fin)	
+			cout << "could not open file";
+		else
+		{
+			double paramValue;
+			
+
+			for (unsigned action = 0; action < approxParameters.size(); ++action)
+			{
+
+				getline(fin, actionRecord);	// use getline to manage tabs
+				std::vector<std::string> record = split(actionRecord, '\t');	
+
+				for (unsigned feature = 0; feature < approxParameters[action].size(); ++feature)
+				{
+					std::stringstream ss;
+				    ss << record.at(feature);
+					ss >> paramValue;
+					
+					approxParameters[action][feature] = paramValue;
+				}
+			}
+		}
+
+		if(fin){
+			fin.close();
+		}
+	}
+
+	std::vector<std::string> &AppQLearningPolicy::split(const std::string &s, char delim, std::vector<std::string> &elems) {
+		std::stringstream ss(s);
+		std::string item;
+		while (std::getline(ss, item, delim)) {
+			elems.push_back(item);
+		}
+		return elems;
+	}
+
+	std::vector<std::string> AppQLearningPolicy::split(const std::string &s, char delim) {
+		std::vector<std::string> elems;
+		split(s, delim, elems);
+		return elems;
+	}
+
 }
+
