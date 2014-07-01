@@ -131,7 +131,7 @@ std::vector<std::vector<SIGPRI> > phasing;
 std::vector<std::vector<int> > arrivalsHorizon;
 double leftTurnProportion = 0.1; /* simplified turning proportions, must agree OD Matrix */ //nbefore 0.2
 double rightTurnProportion = 0.1;
-const char * phasing_file = "c:\\temp\\phasing.txt";
+const char * phasing_file = "c:\\PARAMICS\\phasing.txt";
 //const char * phasing_file = "phasing.txt";
 
 int eQueueCount[3] = {0,0,0};	// in vehicles per phase
@@ -687,7 +687,7 @@ void updateState()
 void printVectorToFile()
 {
 	ofstream myfile;
-	myfile.open ("C:\\temp\\arrival-horizon.txt");
+	myfile.open ("C:\\PARAMICS\\arrival-horizon.txt");
 	if (myfile.is_open())
 	{
 		for(int h=0; h<70; h++){

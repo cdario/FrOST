@@ -8,6 +8,14 @@
 #include <random>
 #include <float.h>
 
+
+#ifdef WIN32
+#include <Windows.h>
+#else
+#include <sys/time.h>
+#include <ctime>
+#endif
+
 namespace std {
 	#include <cstdlib>
 };
@@ -34,6 +42,7 @@ namespace APPQL{
 			approxParameters[ip].resize(nFeatures);
 		}
 
+		runId = "";
 		loadApproxParameters();
 
 	}
@@ -193,8 +202,6 @@ namespace APPQL{
 		{
 			q_value += getApproxParameter(action,feat) * getApproxFeature(feat); /*	Q(s,a) = SUM_n( theta(a,n)*f(n) )	*/
 
-
-			//TODO: print and check convergence?
 		}
 
 		return q_value;	
@@ -237,9 +244,22 @@ namespace APPQL{
 
 	void AppQLearningPolicy::storeApproxParameters()
 	{
-		ofstream fout("c:\\temp\\approx-parameters-out.txt",ios::app);
+		if(runId == "")
+			runId = GetTimeMs64();
 
-		if (!fout)	
+		string fileName = "c:\\PARAMICS\\runs\\approx-parameters-run-";
+		fileName.append(runId);
+		fileName.append(".txt");
+
+		//All output operations happen at the end of the file, appending to its existing contents.
+		ofstream foutAll;
+		foutAll.open(fileName.c_str(),ios::app);
+
+		//ofstream foutAll("c:\\PARAMICS\\approx-parameters-run.txt",ios::app);
+		//Any contents that existed in the file before it is open are discarded.
+		ofstream foutOne("c:\\PARAMICS\\approx-parameters-in.txt",ios::trunc);	
+
+		if (!foutAll && !foutOne)	
 			cout << "could not open file";
 		else
 		{
@@ -247,22 +267,52 @@ namespace APPQL{
 			{
 				for (unsigned feature = 0; feature < approxParameters[action].size(); ++feature)
 				{
-					fout <<approxParameters[action][feature]<<"\t";
+					foutAll <<approxParameters[action][feature]<<"\t";
+					foutOne <<approxParameters[action][feature]<<"\t";
 				}
-				fout <<"\n";
+				foutAll <<"\n";
+				foutOne <<"\n";
 			}
 		}
 
-		if(fout){
-			fout<<"\r\n";	// multiple saves
-			fout.close();
+		if(foutAll){
+			foutAll<<"\r\n";	// multiple saves
+			foutAll.close();
+		}
+		if(foutOne){
+			foutOne.close();
+		}
+	}
+
+	void AppQLearningPolicy::storeLastRunApproxParameters()
+	{
+		ofstream foutAll("c:\\PARAMICS\\approx-parameters-runs.txt",ios::app);	
+		//All output operations happen at the end of the file, appending to its existing contents.
+
+		if (!foutAll)	
+			cout << "could not open file";
+		else
+		{
+			for (unsigned action = 0; action < approxParameters.size(); ++action)
+			{
+				for (unsigned feature = 0; feature < approxParameters[action].size(); ++feature)
+				{
+					foutAll <<approxParameters[action][feature]<<"\t";
+				}
+				foutAll <<"\n";
+			}
+		}
+
+		if(foutAll){
+			foutAll<<"\r\n";	// multiple saves
+			foutAll.close();
 		}
 	}
 
 	void AppQLearningPolicy::loadApproxParameters()
 	{	
 		string actionRecord;
-		ifstream fin("c:\\temp\\approx-parameters-in.txt",ios::in);
+		ifstream fin("c:\\PARAMICS\\approx-parameters-in.txt",ios::in);
 
 		if (!fin)	
 			cout << "could not open file";
@@ -291,6 +341,8 @@ namespace APPQL{
 		if(fin){
 			fin.close();
 		}
+		storeLastRunApproxParameters();
+
 	}
 
 	std::vector<std::string> &AppQLearningPolicy::split(const std::string &s, char delim, std::vector<std::string> &elems) {
@@ -306,6 +358,53 @@ namespace APPQL{
 		std::vector<std::string> elems;
 		split(s, delim, elems);
 		return elems;
+	}
+	/* Returns the amount of milliseconds elapsed since the UNIX epoch. Works on both
+	* windows and linux. */
+
+	
+	std::string AppQLearningPolicy::GetTimeMs64()
+	{
+	#ifdef WIN32
+		/* Windows */
+		FILETIME ft;
+		LARGE_INTEGER li;
+
+		/* Get the amount of 100 nano seconds intervals elapsed since January 1, 1601 (UTC) and copy it
+		* to a LARGE_INTEGER structure. */
+		GetSystemTimeAsFileTime(&ft);
+		li.LowPart = ft.dwLowDateTime;
+		li.HighPart = ft.dwHighDateTime;
+
+		uint64 ret = li.QuadPart;
+		ret -= 116444736000000000LL; /* Convert from file time to UNIX epoch time. */
+		ret /= 10000; /* From 100 nano seconds (10^-7) to 1 millisecond (10^-3) intervals */
+
+		string Result;          // string which will contain the result
+		ostringstream convert;   // stream used for the conversion
+		convert << ret;      // insert the textual representation of 'Number' in the characters in the stream
+		Result = convert.str();
+		return Result;
+	#else
+		/* Linux */
+		struct timeval tv;
+
+		gettimeofday(&tv, NULL);
+
+		uint64 ret = tv.tv_usec;
+		/* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
+		ret /= 1000;
+
+		/* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
+		ret += (tv.tv_sec * 1000);
+
+		string Result;          // string which will contain the result
+		ostringstream convert;   // stream used for the conversion
+		convert << ret;      // insert the textual representation of 'Number' in the characters in the stream
+		Result = convert.str();
+		return Result;
+		
+	#endif
 	}
 
 }

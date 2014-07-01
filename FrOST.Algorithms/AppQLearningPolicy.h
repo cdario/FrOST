@@ -18,6 +18,13 @@ namespace std {
 #include <map>
 #include <set>
 
+#ifdef WIN32
+#include <Windows.h>
+#else
+#include <sys/time.h>
+#include <ctime>
+#endif
+
 
 //using namespace System;
 
@@ -151,8 +158,15 @@ namespace APPQL {
 		APPQLPOLICY_API void AppQLearningPolicy::setApproxFeature(int kParam, double newFeatureValue);	//NEW
 
 		APPQLPOLICY_API void AppQLearningPolicy::storeApproxParameters();
+		APPQLPOLICY_API void AppQLearningPolicy::storeLastRunApproxParameters();
 		APPQLPOLICY_API void AppQLearningPolicy::loadApproxParameters();
 
+		//experiment identifier
+		typedef long long int64; 
+		typedef unsigned long long uint64;
+		std::string AppQLearningPolicy::runId;
+
+		std::string AppQLearningPolicy::GetTimeMs64();
 	};
 }
 

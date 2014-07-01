@@ -38,7 +38,7 @@ namespace CORE{
 #define		ALL_RED 2
 #define		HORIZON_SIZE 15 //70 for isolated
 #define		MAX_SEQUENCE 7
-#define		UPSTREAM_DETECTOR_DISTANCE 150 //700       /* metres */
+#define		UPSTREAM_DETECTOR_DISTANCE 700 //700       /* metres */
 #define		VEHICLE_LENGTH 5       /* metres */
 #define		SPEED_THRESHOLD 0 //2       /* percent discount for expected arrival time  */
 	
@@ -757,10 +757,13 @@ namespace CORE{
 				std::vector<int> quLengths;
 				for (unsigned eq= 0; eq < eQueueCount.size(); ++eq)
 				{
-					if (eQueueCount[eq] > 10)     //TODO: queue groups 
-						quLengths.push_back(10);
+
+					int queueGroup = (int)(eQueueCount[eq]/5);
+
+					if (eQueueCount[eq] > 10)     //TODO: queue groups ; 50+
+						quLengths.push_back(10);	
 					else
-						quLengths.push_back(eQueueCount[eq]);
+						quLengths.push_back(queueGroup);
 				}
 				nState.queueLengths = quLengths;
 
@@ -781,7 +784,7 @@ namespace CORE{
 		ofstream myfile;
 
 		std::ostringstream oss;
-		oss << "C:\\temp\\arrival-horizon_" << id << ".txt"; 
+		oss << "C:\\PARAMICS\\arrival-horizon_" << id << ".txt"; 
 		std::string file_name = oss.str(); 
 		myfile.open(file_name.c_str()); 
 		myfile.open (file_name);	//TODO: test

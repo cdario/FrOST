@@ -185,7 +185,7 @@ void qpx_NET_postOpen(void)
 
 	/** Set up */
 
-	loadNodeConfig("c:\\temp\\node_config.txt");	//contains controlled nodes configuration
+	loadNodeConfig("c:\\PARAMICS\\node_config.txt");	//contains controlled nodes configuration
 	std::vector<int64> stamps;
 	int64 tempI = 0;
 	for(unsigned i=0; i < nodeConfig.size(); i++)
@@ -204,8 +204,8 @@ void qpx_NET_postOpen(void)
 		}
 		//tempI = GetTimeMs64();stamps.push_back(tempI);
 
-		//junctionX->loadPhasingFileGrid("c:\\temp\\node_config_+id+.txt", tJunction);
-		junctionX->loadPhasingFileGrid("c:\\temp\\phasing_4dir.txt", tJunction);
+		//junctionX->loadPhasingFileGrid("c:\\PARAMICS\\node_config_+id+.txt", tJunction);
+		junctionX->loadPhasingFileGrid("c:\\PARAMICS\\phasing_4dir.txt", tJunction);
 		//tempI = GetTimeMs64(); 	stamps.push_back(tempI);
 
 		// clockwise

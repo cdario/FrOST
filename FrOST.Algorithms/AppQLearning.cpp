@@ -205,12 +205,12 @@ namespace APPQL{
 		initPolicy();
     	action = 0;		
 		// set default values
-		greedyEpsilon = 0.1;
+		greedyEpsilon = 0.3;
 		temp = 1;
 
-		learningRate = 1; 
-		rewardDiscountFactor = 0.1;
-		lambda = 0.1;  
+		learningRate = 0.1; 
+		rewardDiscountFactor = 0.01;
+		lambda = 0.01;  
 
 		random = false;
 
@@ -476,7 +476,7 @@ namespace APPQL{
 		double newParamValue;
 		bool printMe = false;
 
-		ofstream fout("c:\\temp\\updates-rules.txt",ios::app);
+		ofstream fout("c:\\PARAMICS\\updates-rules.txt",ios::app);
 		
 
 		currentQ = policy.getQvalue(state, action);
