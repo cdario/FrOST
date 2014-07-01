@@ -179,12 +179,12 @@ namespace APPQL{
 		return 0;
 	}
 	void AppQLearningPolicy::setApproxParam(int action, int kParam, double newParamValue){
-		approxParameters[action][kParam] = newParamValue;
+		approxParameters.at(action).at(kParam) = newParamValue;
 		storeApproxParameters();
 	}
 
 	void AppQLearningPolicy::setApproxFeature(int kParam, double newFeatureValue){
-		approxFeatures[kParam] = newFeatureValue;
+		approxFeatures.at(kParam) = newFeatureValue;
 	}
 
 	/**
@@ -242,6 +242,7 @@ namespace APPQL{
 		return flag;
 	}
 
+	// append parameters for each step in this run, and keep latest run 
 	void AppQLearningPolicy::storeApproxParameters()
 	{
 		if(runId == "")
@@ -257,7 +258,7 @@ namespace APPQL{
 
 		//ofstream foutAll("c:\\PARAMICS\\approx-parameters-run.txt",ios::app);
 		//Any contents that existed in the file before it is open are discarded.
-		ofstream foutOne("c:\\PARAMICS\\approx-parameters-in.txt",ios::trunc);	
+		ofstream foutOne("c:\\PARAMICS\\approx-parameters-last-run.txt",ios::trunc);	
 
 		if (!foutAll && !foutOne)	
 			cout << "could not open file";
@@ -284,10 +285,11 @@ namespace APPQL{
 		}
 	}
 
+	// load last experimental set after reloading the network
 	void AppQLearningPolicy::storeLastRunApproxParameters()
 	{
-		ofstream foutAll("c:\\PARAMICS\\approx-parameters-runs.txt",ios::app);	
-		//All output operations happen at the end of the file, appending to its existing contents.
+		//appending last run to history
+		ofstream foutAll("c:\\PARAMICS\\approx-parameters-run-history.txt",ios::app);	
 
 		if (!foutAll)	
 			cout << "could not open file";
@@ -309,17 +311,17 @@ namespace APPQL{
 		}
 	}
 
+	// read parameters from last experiment
 	void AppQLearningPolicy::loadApproxParameters()
 	{	
 		string actionRecord;
-		ifstream fin("c:\\PARAMICS\\approx-parameters-in.txt",ios::in);
+		ifstream fin("c:\\PARAMICS\\approx-parameters-last-run.txt",ios::in);
 
 		if (!fin)	
 			cout << "could not open file";
 		else
 		{
 			double paramValue;
-			
 
 			for (unsigned action = 0; action < approxParameters.size(); ++action)
 			{

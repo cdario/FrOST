@@ -140,13 +140,14 @@ void loadNodeConfig(char* config_file)
 	ifstream myfile (config_file);
 	vector<string> directionSet;
 
-	directionSet.resize(5);
+	directionSet.resize(5);	// 4 directions + origin
 	if(myfile.is_open())
 	{
+		qps_GUI_printf("*** Node configuration ***"); 
 		while ( std::getline(myfile,line) )
 		{
+			qps_GUI_printf("%s",line.c_str()); 
 			std::vector<std::string> dire = split(line, ' ');
-
 			for (unsigned int y =0; y<dire.size(); y++)
 			{
 				directionSet[y] = dire[y];
@@ -154,10 +155,10 @@ void loadNodeConfig(char* config_file)
 			nodeConfig.push_back(directionSet);
 		}
 		myfile.close();
-		qps_GUI_printf(">>> Loaded Node configuration from file"); 
+		qps_GUI_printf("**************************"); 
 	}
 
-	else qps_GUI_printf(">>> Unable to open node config file"); 
+	else qps_GUI_printf("*** Unable to open node config file"); 
 
 	//vector<vector(int)> allDirections;
 	
@@ -188,6 +189,7 @@ void qpx_NET_postOpen(void)
 	loadNodeConfig("c:\\PARAMICS\\node_config.txt");	//contains controlled nodes configuration
 	std::vector<int64> stamps;
 	int64 tempI = 0;
+	qps_GUI_printf("nodes: %i",nodeConfig.size()); 
 	for(unsigned i=0; i < nodeConfig.size(); i++)
 	{
 		vector<string> tJunction = nodeConfig[i];
